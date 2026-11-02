@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 project(h1_2_controller)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+list(APPEND CMAKE_PREFIX_PATH "/opt/unitree_robotics/lib/cmake")
+find_package(unitree_sdk2 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(yaml-cpp REQUIRED)
 

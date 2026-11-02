@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(unitree_mujoco)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
   message("Debug mode")
