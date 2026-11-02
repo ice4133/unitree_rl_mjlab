@@ -1,3 +1,5 @@
+# because of lack of xbox,so I use keyboard to control the robot, so I set the joystick to false
+keyboard_control: true
 FSM:
   _: # enabled fsms
     Passive:
