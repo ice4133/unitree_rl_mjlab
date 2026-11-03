@@ -5,6 +5,7 @@ logs
 wandb
 MUJOCO_LOG.TXT
 deploy/robots/go2/build
+deploy/robots/go2w/build
 deploy/robots/g1/build
 deploy/robots/h1_2/build
 deploy/robots/g1_23dof/build
@@ -13,6 +14,4 @@ deploy/robots/a2/build
 src/assets/motions/g1/dance1_subject2.npz
 simulate/build
 .vscode
-.clangd
 __pycache__
-policy.onnx

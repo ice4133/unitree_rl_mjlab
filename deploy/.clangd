@@ -1,0 +1,60 @@
+# 对 deploy 下的所有 C++ 文件补充 C++17
+CompileFlags:
+  Add: [-std=c++17]
+
+---
+# 公共头文件和第三方代码：
+# 默认使用当前已经生成的 G1 23 自由度编译数据库
+If:
+  PathMatch: '(include|thirdparty)/.*'
+CompileFlags:
+  CompilationDatabase: robots/g1_23dof/build
+
+---
+# G1 29 自由度
+If:
+  PathMatch: 'robots/g1/.*'
+CompileFlags:
+  CompilationDatabase: robots/g1/build
+
+---
+# G1 23 自由度
+If:
+  PathMatch: 'robots/g1_23dof/.*'
+CompileFlags:
+  CompilationDatabase: robots/g1_23dof/build
+
+---
+# Go2
+If:
+  PathMatch: 'robots/go2/.*'
+CompileFlags:
+  CompilationDatabase: robots/go2/build
+
+---
+# Go2w
+If:
+  PathMatch: 'robots/go2w/.*'
+CompileFlags:
+  CompilationDatabase: robots/go2w/build
+  
+---
+# A2
+If:
+  PathMatch: 'robots/a2/.*'
+CompileFlags:
+  CompilationDatabase: robots/a2/build
+
+---
+# H1_2
+If:
+  PathMatch: 'robots/h1_2/.*'
+CompileFlags:
+  CompilationDatabase: robots/h1_2/build
+
+---
+# R1
+If:
+  PathMatch: 'robots/r1/.*'
+CompileFlags:
+  CompilationDatabase: robots/r1/build

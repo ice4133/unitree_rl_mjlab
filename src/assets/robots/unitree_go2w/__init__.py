@@ -1,0 +1,1 @@
+"""Unitree Go2w quadruped."""

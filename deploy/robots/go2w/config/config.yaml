@@ -1,0 +1,34 @@
+# Keyboard: 1=stand, 2=policy, 0=passive; WASD=move, Q/E=turn.
+keyboard_control: true
+
+FSM:
+  _:
+    Passive:
+      id: 1
+    FixStand:
+      id: 2
+    Velocity:
+      id: 3
+      type: RLBase
+  Passive:
+    transitions:
+      FixStand: LT + up.on_pressed
+    # All motor arrays here use SDK order: FR, FL, RR, RL legs, then wheels.
+    # The Go2 DDS packet has 20 slots; the last four slots are unused.
+    mode: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]
+    kd: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2]
+  FixStand:
+    transitions:
+      Passive: LT + B.on_pressed
+      Velocity: RT + A.on_pressed
+    kp: [60, 80, 80, 60, 80, 80, 60, 80, 80, 60, 80, 80, 0, 0, 0, 0]
+    kd: [5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 2, 2, 2, 2]
+    ts: [0, 1, 2]
+    qs:
+      - [] # Filled from current command positions by the common FixStand state.
+      - [0, 1.36, -2.65, 0, 1.36, -2.65, 0, 1.36, -2.65, 0, 1.36, -2.65, 0, 0, 0, 0]
+      - [0.1, 0.9, -1.8, -0.1, 0.9, -1.8, 0.1, 0.9, -1.8, -0.1, 0.9, -1.8, 0, 0, 0, 0]
+  Velocity:
+    transitions:
+      Passive: LT + B.on_pressed
+    policy_dir: config/policy/velocity/v0
