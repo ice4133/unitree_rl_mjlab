@@ -29,6 +29,11 @@ int main(int argc, char** argv)
     // Load parameters
     auto vm = param::helper(argc, argv);
 
+    if (param::config["keyboard_control"].as<bool>(false))
+    {
+        FSMState::keyboard = std::make_shared<Keyboard>();
+    }
+
     std::cout << " --- Unitree Robotics --- \n";
     std::cout << "     Go2 Controller \n";
 
@@ -41,8 +46,18 @@ int main(int argc, char** argv)
     auto fsm = std::make_unique<CtrlFSM>(param::config["FSM"]);
     fsm->start();
 
-    std::cout << "Press [L2 + up] to enter FixStand mode.\n";
-    std::cout << "And then press [R2 + A] to start controlling the robot.\n";
+    if (FSMState::keyboard)
+    {
+        std::cout << "Keyboard control: use this terminal for input.\n";
+        std::cout << "Press [1] to enter FixStand, then [2] to enter Velocity.\n";
+        std::cout << "Hold [W/S] to move forward/backward, [A/D] to move left/right, [Q/E] to turn.\n";
+        std::cout << "Press [0] to enter Passive (damping) mode.\n";
+    }
+    else
+    {
+        std::cout << "Press [L2 + up] to enter FixStand mode.\n";
+        std::cout << "And then press [R2 + A] to start controlling the robot.\n";
+    }
 
     while (true)
     {

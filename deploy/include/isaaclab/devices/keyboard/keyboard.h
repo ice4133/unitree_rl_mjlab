@@ -6,8 +6,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <thread>
-
-
+#include <iostream>
 /**
  * @brief Maintain a keyboard reading thread.
  * And get the latest key value.

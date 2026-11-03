@@ -1,3 +1,6 @@
+# Keyboard: 1=stand, 2=walk, 0=passive; WASD=move, Q/E=turn.
+keyboard_control: true
+
 FSM:
   _: # enabled fsms
     Passive:
@@ -28,4 +31,3 @@ FSM:
     transitions: 
       Passive: LT + B.on_pressed
     policy_dir: config/policy/velocity
-    
