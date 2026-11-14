@@ -2,8 +2,7 @@
 
 任务名：`Unitree-Go2W-Flat`、`Unitree-Go2W-Rough`。
 环境参数、PPO 参数和导出适配均在本目录独立定义，
-不导入 Go2、G1 等同级机器人配置。仅复用公共速度环境模板、MDP 函数、mjlab/RL
-实现，以及 Go2W 自己的机器人资产；不修改 tracking 或其他机器人的配置。
+仅复用公共速度环境模板、MDP 函数、mjlab/RL 实现，以及 Go2W 自己的机器人资产。
 
 ## 训练与回放
 
