@@ -1,0 +1,15 @@
+enabled: true
+
+# Independent from simulate/config.yaml domain_id (Unitree SDK2 domain 0).
+# This is set explicitly on the ROS context, overriding shell ROS_DOMAIN_ID.
+ros_domain_id: 10
+clock_publish_rate: 100.0
+
+cameras:
+  - name: front_camera
+    enabled: true
+    publish_rate: 15.0
+    frame_id: front_camera_optical_frame
+    color_topic: /camera/color/image_raw
+    depth_topic: /camera/depth/image_raw
+    info_topic: /camera/camera_info

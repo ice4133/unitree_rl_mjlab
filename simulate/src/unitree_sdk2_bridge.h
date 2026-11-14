@@ -39,7 +39,9 @@ public:
 
     }
 
+    virtual ~UnitreeSDK2BridgeBase() = default;
     virtual void start() {}
+    virtual void stop() {}
 
     void printSceneInformation()
     {
@@ -170,6 +172,10 @@ public:
         thread_ = std::make_shared<unitree::common::RecurrentThread>(
             "unitree_bridge", UT_CPU_ID_NONE, 1000, [this]() { this->run(); });
     }
+
+    ~RobotBridge() override { stop(); }
+
+    void stop() override { thread_.reset(); }
 
     virtual void run()
     {

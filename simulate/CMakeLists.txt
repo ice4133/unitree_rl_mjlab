@@ -44,4 +44,21 @@ link_libraries(
 
 add_executable(unitree_mujoco ${SIM_SRC} src/main.cc)
 
+# SDK2's Cyclone C++ library must use its matching Cyclone C library. Sourcing
+# ROS adds a different libddsc.so.0 to LD_LIBRARY_PATH; ELF RPATH takes priority.
+if(UNIX AND NOT APPLE)
+  get_target_property(UNITREE_DDS_LIBRARY ddsc IMPORTED_LOCATION)
+  get_filename_component(UNITREE_DDS_LIBRARY_DIR "${UNITREE_DDS_LIBRARY}" DIRECTORY)
+  set_property(TARGET unitree_mujoco APPEND PROPERTY BUILD_RPATH "${UNITREE_DDS_LIBRARY_DIR}")
+  target_link_options(unitree_mujoco PRIVATE "LINKER:--disable-new-dtags")
+endif()
+
+option(ENABLE_ROS2_SENSORS "Publish simulated sensors over ROS 2 domain 10" ON)
+if(ENABLE_ROS2_SENSORS)
+  include(ros2_sensors/common/dependencies.cmake)
+  add_subdirectory(ros2_sensors)
+  target_compile_definitions(unitree_mujoco PRIVATE UNITREE_WITH_ROS2_SENSORS=1)
+  target_link_libraries(unitree_mujoco ros2_sensors)
+endif()
+
 add_executable(jstest src/joystick/jstest.cc src/joystick/joystick.cc)

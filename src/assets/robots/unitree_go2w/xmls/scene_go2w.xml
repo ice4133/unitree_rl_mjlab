@@ -71,6 +71,8 @@
       <geom size="0.05 0.045" pos="0.285 0 0.01" type="cylinder" class="collision" name="base2_collision" />
       <geom size="0.047" pos="0.293 0 -0.06" class="collision" name="base3_collision" type="sphere" />
       <site name="imu" pos="-0.02557 0 0.04232" />
+      <!-- Front camera: fixed to the base, looking along +X with image up along +Z. -->
+      <camera name="front_camera" mode="fixed" pos="0.35 0 0.08" xyaxes="0 -1 0 0 0 1" fovy="60" resolution="640 480" />
       <body name="FL_hip" pos="0.1934 0.0465 0">
         <inertial pos="-0.0054 0.00194 -0.000105" quat="0.497014 0.499245 0.505462 0.498237" mass="0.678" diaginertia="0.00088403 0.000596003 0.000479967" />
         <joint name="FL_hip_joint" class="abduction" />
@@ -286,5 +288,9 @@
   <worldbody>
     <light pos="1 0 3.5" dir="0 0 -1" directional="true" />
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
+    <!-- Static obstacle 2 m ahead; box size uses half-extents, with its bottom at z=0. -->
+    <geom name="front_obstacle" type="box" pos="2 0 0.4"
+          size="0.2 0.4 0.4" rgba="0.95 0.35 0.05 1"
+          contype="1" conaffinity="1" group="0" />
   </worldbody>
 </mujoco>

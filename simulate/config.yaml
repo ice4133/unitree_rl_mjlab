@@ -12,8 +12,10 @@ robot_scene: "src/assets/robots/unitree_go2w/xmls/scene_go2w.xml"
 #robot: "a2"
 #robot_scene: "src/assets/robots/unitree_a2/xmls/scene_a2.xml"
 
-domain_id: 0  # Domain id
+domain_id: 0  # Unitree SDK2 motor channels; ROS sensors use a separate domain 10.
 interface: "lo" # Interface
+
+ros2_sensors_config: "ros2_sensors/config/sensors.yaml" # Relative to simulate/.
 
 use_joystick: 0 # Simulate Unitree WirelessController using a gamepad
 joystick_type: "xbox" # support "xbox" and "switch" gamepad layout

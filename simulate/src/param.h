@@ -12,6 +12,7 @@ inline struct SimulationConfig
 {
     std::string robot;
     std::filesystem::path robot_scene;
+    std::filesystem::path ros2_sensors_config = "ros2_sensors/config/sensors.yaml";
 
     int domain_id;
     std::string interface;
@@ -33,6 +34,7 @@ inline struct SimulationConfig
         {
             robot = cfg["robot"].as<std::string>();
             robot_scene = cfg["robot_scene"].as<std::string>();
+            ros2_sensors_config = cfg["ros2_sensors_config"].as<std::string>("ros2_sensors/config/sensors.yaml");
             domain_id = cfg["domain_id"].as<int>();
             interface = cfg["interface"].as<std::string>();
             use_joystick = cfg["use_joystick"].as<int>();

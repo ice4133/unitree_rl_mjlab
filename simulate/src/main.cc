@@ -18,6 +18,8 @@
 #undef private
 
 #include <chrono>
+#include <atomic>
+#include <csignal>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -34,6 +36,9 @@
 #include "array_safety.h"
 #include "unitree_sdk2_bridge.h"
 #include "param.h"
+#ifdef UNITREE_WITH_ROS2_SENSORS
+#include "common/sensor_manager.hpp"
+#endif
 
 #define MUJOCO_PLUGIN_DIR "mujoco_plugin"
 #define NUM_MOTOR_IDL_GO 20
@@ -99,6 +104,23 @@ namespace
   // model and data
   mjModel *m = nullptr;
   mjData *d = nullptr;
+  mj::Simulate* active_simulator = nullptr;
+  GLFWkeyfun previous_key_callback = nullptr;
+  volatile std::sig_atomic_t stop_requested = 0;
+  std::atomic_bool bridge_stop_requested{false};
+#ifdef UNITREE_WITH_ROS2_SENSORS
+  std::unique_ptr<ros2_sensors::SensorManager> sensors;
+
+  void LoadSensors(const mjModel* model, const mjData* data) {
+    try {
+      sensors->load_model(model, data);
+    } catch (const std::exception& error) {
+      std::cerr << "ROS 2 camera initialization failed: " << error.what() << '\n';
+      sensors.reset();
+      std::exit(EXIT_FAILURE);
+    }
+  }
+#endif
 
   // control noise variables
   mjtNum *ctrlnoise = nullptr;
@@ -337,6 +359,10 @@ namespace
     // run until asked to exit
     while (!sim.exitrequest.load())
     {
+      if (stop_requested) {
+        sim.exitrequest.store(1);
+        break;
+      }
       if (sim.droploadrequest.load())
       {
         sim.LoadMessage(sim.dropfilename);
@@ -350,12 +376,18 @@ namespace
         {
           sim.Load(mnew, dnew, sim.dropfilename);
 
+#ifdef UNITREE_WITH_ROS2_SENSORS
+          sensors->unload_model();
+#endif
           mj_deleteData(d);
           mj_deleteModel(m);
 
           m = mnew;
           d = dnew;
           mj_forward(m, d);
+#ifdef UNITREE_WITH_ROS2_SENSORS
+          LoadSensors(m, d);
+#endif
 
           // allocate ctrlnoise
           free(ctrlnoise);
@@ -380,12 +412,18 @@ namespace
         {
           sim.Load(mnew, dnew, sim.filename);
 
+#ifdef UNITREE_WITH_ROS2_SENSORS
+          sensors->unload_model();
+#endif
           mj_deleteData(d);
           mj_deleteModel(m);
 
           m = mnew;
           d = dnew;
           mj_forward(m, d);
+#ifdef UNITREE_WITH_ROS2_SENSORS
+          LoadSensors(m, d);
+#endif
 
           // allocate ctrlnoise
           free(ctrlnoise);
@@ -518,6 +556,9 @@ namespace
             if (stepped)
             {
               sim.AddToHistory();
+#ifdef UNITREE_WITH_ROS2_SENSORS
+              sensors->update(m, d);
+#endif
             }
           }
 
@@ -549,6 +590,9 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
     {
       sim->Load(m, d, filename);
       mj_forward(m, d);
+#ifdef UNITREE_WITH_ROS2_SENSORS
+      LoadSensors(m, d);
+#endif
 
       // allocate ctrlnoise
       free(ctrlnoise);
@@ -562,19 +606,12 @@ void PhysicsThread(mj::Simulate *sim, const char *filename)
   }
 
   PhysicsLoop(*sim);
-
-  // delete everything we allocated
-  free(ctrlnoise);
-  mj_deleteData(d);
-  mj_deleteModel(m);
-
-  exit(0);
 }
 
 void *UnitreeSdk2BridgeThread(void *arg)
 {
   // Wait for mujoco data
-  while (true)
+  while (!bridge_stop_requested)
   {
     if (d)
     {
@@ -583,6 +620,7 @@ void *UnitreeSdk2BridgeThread(void *arg)
     }
     usleep(500000);
   }
+  if (bridge_stop_requested) return nullptr;
 
   unitree::robot::ChannelFactory::Instance()->Init(param::config.domain_id, param::config.interface);
 
@@ -601,10 +639,13 @@ void *UnitreeSdk2BridgeThread(void *arg)
   }
   interface->start();
   
-  while (true)
+  while (!bridge_stop_requested)
   {
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
+  interface->stop();
+  interface.reset();
+  return nullptr;
 }
 //------------------------------------------ main --------------------------------------------------
 
@@ -631,11 +672,19 @@ void user_key_cb(GLFWwindow* window, int key, int scancode, int act, int mods) {
         elastic_band.length_ += 0.1;
       }
     }
-    if(key==GLFW_KEY_BACKSPACE) {
+    if(key==GLFW_KEY_BACKSPACE && active_simulator) {
+      const std::unique_lock<std::recursive_mutex> lock(active_simulator->mtx);
+      if (!m || !d) return;
       mj_resetData(m, d);
       mj_forward(m, d);
+#ifdef UNITREE_WITH_ROS2_SENSORS
+      sensors->reset();
+      sensors->update(m, d);
+#endif
+      return;
     }
   }
+  if (previous_key_callback) previous_key_callback(window, key, scancode, act, mods);
 }
 
 // run event loop
@@ -677,21 +726,53 @@ int main(int argc, char **argv)
   if(param::config.robot_scene.is_relative()) {
     param::config.robot_scene = proj_dir.parent_path() / param::config.robot_scene;
   }
+#ifdef UNITREE_WITH_ROS2_SENSORS
+  if (param::config.ros2_sensors_config.is_relative()) {
+    param::config.ros2_sensors_config = proj_dir / param::config.ros2_sensors_config;
+  }
+  try {
+    sensors = std::make_unique<ros2_sensors::SensorManager>(
+        param::config.ros2_sensors_config.string(), param::config.domain_id);
+  } catch (const std::exception& error) {
+    std::cerr << "ROS 2 sensor initialization failed: " << error.what() << '\n';
+    return 1;
+  }
+#endif
 
   // simulate object encapsulates the UI
   auto sim = std::make_unique<mj::Simulate>(
     std::make_unique<mj::GlfwAdapter>(),
     &cam, &opt, &pert, /* is_passive = */ false);
+  active_simulator = sim.get();
+  std::signal(SIGINT, [](int) { stop_requested = 1; });
+  std::signal(SIGTERM, [](int) { stop_requested = 1; });
 
   std::thread unitree_thread(UnitreeSdk2BridgeThread, nullptr);
 
   // start physics thread
   std::thread physicsthreadhandle(&PhysicsThread, sim.get(), param::config.robot_scene.c_str());
   // start simulation UI loop (blocking call)
-  glfwSetKeyCallback(static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_,user_key_cb);
+  previous_key_callback = glfwSetKeyCallback(
+      static_cast<mj::GlfwAdapter*>(sim->platform_ui.get())->window_, user_key_cb);
   sim->RenderLoop();
   physicsthreadhandle.join();
-
-  pthread_exit(NULL);
+  // Stop every user of mjData before freeing it. Graphics contexts are also
+  // destroyed on their owning threads before the shared EGL display closes.
+  bridge_stop_requested = true;
+  unitree_thread.join();
+#ifdef UNITREE_WITH_ROS2_SENSORS
+  sensors->unload_model();
+#endif
+  active_simulator = nullptr;
+  sim.reset();
+  // Terminate GLFW while the graphics driver is alive, before EGL teardown and
+  // process-global destructors. Its registered atexit callback becomes a no-op.
+  glfwTerminate();
+#ifdef UNITREE_WITH_ROS2_SENSORS
+  sensors.reset();
+#endif
+  free(ctrlnoise);
+  mj_deleteData(d);
+  mj_deleteModel(m);
   return 0;
 }
