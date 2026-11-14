@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.16)
+project(autonomy_bringup)
+find_package(ament_cmake REQUIRED)
+install(DIRECTORY launch rviz DESTINATION share/${PROJECT_NAME})
+install(PROGRAMS scripts/check_mapping.py DESTINATION lib/${PROJECT_NAME} RENAME check_mapping)
+install(PROGRAMS scripts/check_navigation.py DESTINATION lib/${PROJECT_NAME} RENAME check_navigation)
+ament_package()

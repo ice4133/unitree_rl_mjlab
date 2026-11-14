@@ -1,0 +1,7 @@
+{
+  "names": {
+    "pointcloud_to_laserscan": {
+      "cmake-args": ["-DBUILD_TESTING=OFF"]
+    }
+  }
+}

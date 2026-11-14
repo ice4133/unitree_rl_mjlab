@@ -1,0 +1,17 @@
+lidar_filter:
+  ros__parameters:
+    input_topic: /lidar/points
+    output_topic: /perception/lidar/points_filtered
+    fixed_frame: odom
+    base_frame: base_link
+    footprint_frame: base_footprint
+    scan_frame: lidar_scan_frame
+    # Flat MuJoCo floor z=0, measured along the odom +Z axis.
+    ground_height: 0.0
+    min_height: 0.08
+    max_height: 2.0
+    range_min: 0.1
+    range_max: 20.0
+    # Axis-aligned robot envelope in base_link coordinates.
+    self_min: [-0.45, -0.30, -0.60]
+    self_max: [0.45, 0.30, 0.25]
