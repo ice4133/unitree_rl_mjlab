@@ -1,15 +1,18 @@
-"""Go2W flat velocity baseline using the shared velocity environment factory.
+"""Go2W flat and rough velocity tasks using the shared environment factory.
 
 Action/observation scales and the split leg/wheel penalties reference robot_lab:
 https://github.com/fan-ziqi/robot_lab/blob/main/source/robot_lab/robot_lab/tasks/manager_based/locomotion/velocity/config/wheeled/unitree_go2w/rough_env_cfg.py
 Reward functions retain this project's definitions, so weights are starting values.
 """
 
+from copy import deepcopy
+
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs import mdp
 from mjlab.envs.mdp.actions import JointPositionActionCfg, JointVelocityActionCfg
 from mjlab.managers import EventTermCfg, RewardTermCfg, SceneEntityCfg, TerminationTermCfg
-from mjlab.sensor import ContactMatch, ContactSensorCfg
+from mjlab.managers.metrics_manager import MetricsTermCfg
+from mjlab.sensor import ContactMatch, ContactSensorCfg, RayCastSensorCfg
 from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 
@@ -20,19 +23,18 @@ LEG_JOINTS = (r".*_(hip|thigh|calf)_joint",)
 WHEEL_JOINTS = (r".*_wheel_joint",)
 
 
-def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create a rolling velocity task with 12 leg and 4 wheel actions."""
+def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Configure the common 12 leg-position and 4 wheel-velocity actions."""
   cfg = make_velocity_env_cfg()
-  cfg.sim.njmax = 300
-  cfg.sim.mujoco.ccd_iterations = 50
-  cfg.sim.contact_sensor_maxmatch = 64
-  cfg.sim.nconmax = None
 
   cfg.scene.entities = {"robot": get_go2w_robot_cfg()}
   cfg.scene.num_envs = 1024 if not play else 1
-  assert cfg.scene.terrain is not None
-  cfg.scene.terrain.terrain_type = "plane"
-  cfg.scene.terrain.terrain_generator = None
+  for sensor in cfg.scene.sensors or ():
+    if sensor.name == "terrain_scan":
+      assert isinstance(sensor, RayCastSensorCfg)
+      sensor.frame.name = "base_link"
+      # Terrain is group 0; ignore the robot's visual and collision geoms.
+      sensor.include_geom_groups = (0,)
 
   # Go2W's named wheel geoms/sites define the ground-contact sensor contract.
   site_names = ("FR", "FL", "RR", "RL")
@@ -60,7 +62,10 @@ def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     num_slots=1,
     history_length=4,
   )
-  cfg.scene.sensors = (feet_ground_cfg, nonfoot_ground_cfg)
+  cfg.scene.sensors = (cfg.scene.sensors or ()) + (
+    feet_ground_cfg,
+    nonfoot_ground_cfg,
+  )
   cfg.viewer.body_name = "base_link"
   cfg.viewer.distance = 1.5
   cfg.viewer.elevation = -10.0
@@ -107,10 +112,9 @@ def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
   }
 
-  # Keep the deployment's 55-value actor contract, omitting cumulative wheel
-  # angles while retaining all 16 velocities. Normalization is exported in ONNX.
+  # Omit cumulative wheel angles while retaining all 16 velocities.
+  # Normalization is exported in ONNX.
   for group in cfg.observations.values():
-    group.terms.pop("height_scan", None)
     group.terms["base_ang_vel"].scale = 0.25
     group.terms["joint_pos"].params["asset_cfg"] = SceneEntityCfg(
       "robot", joint_names=LEG_JOINTS
@@ -125,8 +129,9 @@ def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   command.ranges.lin_vel_x = (-0.5, 1.0)
   command.ranges.lin_vel_y = (0.0, 0.0)
   command.ranges.ang_vel_z = (-1.0, 1.0)
-  # This flat rolling baseline uses fixed command ranges and no terrain levels.
-  cfg.curriculum = {}
+  # Keep command ranges compatible with the non-steering wheels. Rough uses
+  # terrain progression, without the shared template's lateral-speed curriculum.
+  cfg.curriculum.pop("command_vel", None)
 
   # These foot rewards assume stationary stance feet and/or a walking gait.
   for name in ("foot_gait", "foot_clearance", "foot_slip", "soft_landing"):
@@ -157,7 +162,7 @@ def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={"asset_cfg": SceneEntityCfg("robot", actuator_names=LEG_JOINTS)},
   )
 
-  # Moderate startup randomization for the first flat-ground baseline.
+  # Moderate randomization shared by the flat and rough baselines.
   cfg.events["foot_friction"].params["ranges"] = (0.5, 1.2)
   cfg.events["base_com"].params["ranges"] = {
     0: (-0.02, 0.02), 1: (-0.02, 0.02), 2: (-0.02, 0.02)
@@ -172,10 +177,77 @@ def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.episode_length_s = int(1e9)
     cfg.observations["actor"].enable_corruption = False
     cfg.events.pop("push_robot", None)
+    cfg.curriculum = {}
     cfg.events["randomize_terrain"] = EventTermCfg(
       func=mdp.randomize_terrain,
       mode="reset",
       params={},
     )
+
+  return cfg
+
+
+def unitree_go2w_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Train terrain-aware rolling and stepping without prescribing a foot gait."""
+  cfg = _make_go2w_env_cfg(play=play)
+  cfg.sim.mujoco.ccd_iterations = 500
+  cfg.sim.contact_sensor_maxmatch = 500
+  # Let MJWarp size contact storage for the heightfield/cylinder contacts.
+  cfg.sim.nconmax = None
+
+  assert cfg.scene.terrain is not None
+  assert cfg.scene.terrain.terrain_generator is not None
+  # The shared factory shallow-copies the preset. Own its nested sub-terrains
+  # so generation and play overrides cannot change other registered tasks.
+  generator = deepcopy(cfg.scene.terrain.terrain_generator)
+  cfg.scene.terrain.terrain_generator = generator
+  generator.curriculum = not play
+  cfg.scene.terrain.max_init_terrain_level = 1
+
+  # Climbing requires vertical base motion and larger leg excursions. Keep the
+  # shared reward's original defaults for Flat and the other robots.
+  cfg.rewards["track_linear_velocity"].params["z_vel_weight"] = 0.0
+  cfg.rewards["pose"].weight = 0.5
+  for name in ("std_walking", "std_running"):
+    cfg.rewards["pose"].params[name] = {
+      r".*(FR|FL|RR|RL)_hip_joint.*": 0.2,
+      r".*(FR|FL|RR|RL)_thigh_joint.*": 0.5,
+      r".*(FR|FL|RR|RL)_calf_joint.*": 0.75,
+    }
+  cfg.rewards["stand_still"].weight = -0.5
+
+  # Monitor leg and wheel motion separately alongside velocity error, terrain
+  # level and terminations. These diagnostics do not reward unnecessary steps.
+  for name, joints in (("leg", LEG_JOINTS), ("wheel", WHEEL_JOINTS)):
+    cfg.metrics[f"{name}_joint_vel_l2"] = MetricsTermCfg(
+      func=mdp.joint_vel_l2,
+      params={"asset_cfg": SceneEntityCfg("robot", joint_names=joints)},
+    )
+
+  if play:
+    generator.num_cols = 5
+    generator.num_rows = 5
+    generator.border_width = 10.0
+
+  return cfg
+
+
+def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Create the original flat rolling baseline with its 55-value actor input."""
+  cfg = _make_go2w_env_cfg(play=play)
+  cfg.sim.njmax = 300
+  cfg.sim.mujoco.ccd_iterations = 50
+  cfg.sim.contact_sensor_maxmatch = 64
+  cfg.sim.nconmax = None
+
+  assert cfg.scene.terrain is not None
+  cfg.scene.terrain.terrain_type = "plane"
+  cfg.scene.terrain.terrain_generator = None
+  cfg.scene.sensors = tuple(
+    sensor for sensor in (cfg.scene.sensors or ()) if sensor.name != "terrain_scan"
+  )
+  for group in cfg.observations.values():
+    group.terms.pop("height_scan", None)
+  cfg.curriculum = {}
 
   return cfg

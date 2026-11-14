@@ -25,10 +25,12 @@ def track_linear_velocity(
   std: float,
   command_name: str,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  z_vel_weight: float = 2.0,
 ) -> torch.Tensor:
   """Reward for tracking the commanded base linear velocity.
 
-  The commanded z velocity is assumed to be zero.
+  The commanded z velocity is assumed to be zero. Set ``z_vel_weight=0``
+  for planar tracking without penalizing the vertical motion needed on steps.
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
@@ -36,7 +38,7 @@ def track_linear_velocity(
   actual = asset.data.root_link_lin_vel_b
   xy_error = torch.sum(torch.square(command[:, :2] - actual[:, :2]), dim=1)
   z_error = torch.square(actual[:, 2])
-  lin_vel_error = xy_error + (2 * z_error)
+  lin_vel_error = xy_error + (z_vel_weight * z_error)
   return torch.exp(-lin_vel_error / std**2)
 
 
