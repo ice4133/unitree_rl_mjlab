@@ -1,5 +1,6 @@
 # Keyboard: 1=stand, 2=walk, 0=passive; WASD=move, Q/E=turn.
-keyboard_control: true
+control:
+  mode: keyboard # joystick | keyboard
 
 FSM:
   _: # enabled fsms

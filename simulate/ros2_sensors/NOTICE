@@ -22,3 +22,13 @@ Lidar modifications: SensorManager integration without ros2_control/pluginlib,
 MuJoCo 3.3.6 ray API, owned double-buffered snapshots with refreshed geometry,
 simulation-time rate control, reset generation handling, sensor QoS, site TF,
 configuration validation, and non-duplicated full-circle azimuth sampling.
+
+Floating-base odometry extraction is adapted from the same repository/commit:
+  mujoco_ros2_control/src/mujoco_system_interface.cpp
+  mujoco_ros2_control/include/mujoco_ros2_control/mujoco_system_interface.hpp
+Copyright (c) 2025, United States Government, as represented by the
+Administrator of the National Aeronautics and Space Administration.
+Licensed under the Apache License, Version 2.0; see LICENSE.
+Odometry modifications: standalone SensorManager lifecycle, ROS domain 10,
+simulation-time sampling, latest-state worker, world-to-body linear velocity
+conversion for ROS child-frame twist, dynamic TF, validation and reset handling.

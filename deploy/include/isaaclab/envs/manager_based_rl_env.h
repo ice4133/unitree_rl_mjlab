@@ -11,6 +11,8 @@
 #include "isaaclab/algorithms/algorithms.h"
 #include <iostream>
 #include "isaaclab/utils/utils.h"
+#include "isaaclab/envs/velocity_command.h"
+#include <utility>
 
 namespace isaaclab
 {
@@ -22,8 +24,9 @@ class ManagerBasedRLEnv
 {
 public:
     // Constructor
-    ManagerBasedRLEnv(YAML::Node cfg, std::shared_ptr<Articulation> robot_)
-    :cfg(cfg), robot(std::move(robot_))
+    ManagerBasedRLEnv(YAML::Node cfg, std::shared_ptr<Articulation> robot_,
+                      VelocityCommandSource velocity_source = {})
+    :cfg(cfg), robot(std::move(robot_)), velocity_source_(std::move(velocity_source))
     {
         // Parse configuration
         this->step_dt = cfg["step_dt"].as<float>();
@@ -41,6 +44,7 @@ public:
         }
 
         robot->update();
+        update_velocity_command();
 
         // load managers
         action_manager = std::make_unique<ActionManager>(cfg["actions"], this);
@@ -52,6 +56,7 @@ public:
         global_phase = 0;
         episode_length = 0;
         robot->update();
+        update_velocity_command();
         action_manager->reset();
         observation_manager->reset();
     }
@@ -60,10 +65,13 @@ public:
     {
         episode_length += 1;
         robot->update();
+        update_velocity_command();
         auto obs = observation_manager->compute();
         auto action = alg->act(obs);
         action_manager->process_action(action);
     }
+
+    const VelocityCommand& velocity_command() const { return velocity_command_; }
 
     float step_dt;
     
@@ -75,6 +83,22 @@ public:
     std::unique_ptr<Algorithms> alg;
     long episode_length = 0;
     float global_phase = 0.0f;
+
+private:
+    void update_velocity_command()
+    {
+        // Read once per policy step so velocity and gait observations agree.
+        if (velocity_source_) {
+            velocity_command_ = velocity_source_();
+        } else if (auto* joystick = robot->data.joystick) {
+            velocity_command_ = {joystick->ly(), -joystick->lx(), -joystick->rx()};
+        } else {
+            velocity_command_ = {};
+        }
+    }
+
+    VelocityCommandSource velocity_source_;
+    VelocityCommand velocity_command_{};
 };
 
 };

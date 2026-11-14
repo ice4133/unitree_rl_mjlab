@@ -20,11 +20,48 @@ Linux 构建会将 Unitree SDK2 的动态库路径写入可执行文件的 RPATH
 
 键盘 `1` 进入站立，`2` 进入策略，`0` 进入阻尼；W/S 控制前后，Q/E 控制转向。
 当前平地滚动任务的横向速度固定为 0，A/D 不产生横移命令。
-使用遥控器时，将 `config/config.yaml` 的
-`keyboard_control` 设为 `false`，状态切换按入口提示操作。
+在 `config/config.yaml` 中设置 `control.mode: keyboard` 或 `control.mode: joystick`，
+状态切换按入口提示操作。`control.mode` 是唯一的档位选择：手动档同时选择
+速度和状态输入；自动档通过 ROS 接收速度，同时保留手柄状态按钮和终端状态按键。
+没有 `control` 节点时默认为手柄。
 仿真手柄还需在 `simulate/config.yaml` 设置 `use_joystick: 1` 和匹配的
 `joystick_type`。按住 L2（LT）并按十字方向键上进入站立，状态切换组合键
 支持任一按下顺序；修改这些配置后需重启对应程序。
+
+## 自动速度输入
+
+`config/config.yaml` 的 `control.mode: auto` 使用 ROS 2 `/cmd_vel`
+（`geometry_msgs/msg/Twist`）。`linear.x`、`linear.y` 是机体坐标系前进、横移
+速度（m/s），`angular.z` 是绕机体 Z 轴的转向速度（rad/s）。接收节点默认
+使用独立的 domain 10，Unitree 电机通信仍使用 domain 0；无需修改 shell 的
+`ROS_DOMAIN_ID` 来启动控制器。默认 Fast DDS，启动时自动选择
+`rmw_fastrtps_cpp`，与仿真传感器的中间件约定一致。
+
+自动档只切换速度来源，仍需先进入 `FixStand`，完成站立后再进入 `Velocity`。
+状态按钮继续使用手柄；在交互终端运行时，也可以直接用 `1`、`2`、`0`
+控制站立、策略和阻尼，无需额外配置。终端状态按键按下期间优先于手柄按钮，
+松开后恢复读取手柄。不带终端运行时不创建键盘输入线程。
+自动档中键盘移动键和手柄摇杆不提供速度，状态切换和姿态保护继续生效。
+
+```bash
+ROS_DOMAIN_ID=10 ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist \
+  '{linear: {x: 0.2}, angular: {z: 0.0}}'
+```
+
+尚未收到指令、收到非有限值或超过 `control.ros.timeout`（默认 0.5 秒）未收到新指令时，
+目标速度归零，保持策略运行。超时按单调时钟计算，不依赖 `/clock`。
+所有来源统一沿用策略 `params/deploy.yaml` 的速度范围限幅；当前策略横移范围为 0。
+未来 Nav2 可以直接发布到同一个话题。
+
+公共 `ManagerBasedRLEnv` 的第三个可选参数是 `isaaclab::VelocityCommandSource`，
+返回 `{vx, vy, wz}`。默认仍读取手柄（键盘沿用已有的手柄模拟路径），
+每个策略周期读取一次，速度观测和步态相位共用该快照。公共头文件不依赖 ROS；
+订阅器在 Go2W 内部实现，并由环境中的回调持有。其他机器人无需修改。
+只需要手动控制且不希望链接 ROS 时，可以使用 `-DENABLE_ROS2_COMMANDS=OFF` 构建。
+
+手柄直接提供摇杆值，键盘沿用模拟摇杆的路径；只有自动档通过 ROS 订阅 `/cmd_vel`。
+三种来源最后都转换成 `{vx, vy, wz}`，统一限幅后进入策略的速度观测。
+策略接收数值观测，不直接订阅 ROS。电机指令仍通过 Unitree SDK2 的 `rt/lowcmd` 发布。
 
 ## 电机和动作顺序
 

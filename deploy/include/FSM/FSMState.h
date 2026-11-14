@@ -53,21 +53,19 @@ public:
         );
     }
 
-    // void pre_run()
-    // {
-    //     lowstate->update();
-    //     if(keyboard) keyboard->update();
-    // }
 	void pre_run()
 	{
 		if (keyboard) keyboard->update();
 
-		if (keyboard &&
-			param::config["keyboard_control"].as<bool>(false))
+		const auto control = param::config["control"];
+		const auto mode = control ? control["mode"].as<std::string>("joystick") : "joystick";
+		const auto key = keyboard ? keyboard->key() : std::string{};
+		const bool state_key = key == "1" || key == "2" || key == "3" || key == "0";
+		// In auto, a terminal state key temporarily takes precedence over gamepad buttons.
+		if (keyboard && (mode == "keyboard" || (mode == "auto" && state_key)))
 		{
 			unitree::common::REMOTE_DATA_RX input{};
 			auto &buttons = input.RF_RX.btn.components;
-			const auto key = keyboard->key();
 
 			// 状态切换
 			if (key == "1") {
@@ -90,22 +88,26 @@ public:
 				buttons.B = 1;
 			}
 
-			// 行走与转向
-			if (key == "w") input.RF_RX.ly =  0.3f;
-			if (key == "s") input.RF_RX.ly = -0.3f;
-			if (key == "a") input.RF_RX.lx = -0.3f;
-			if (key == "d") input.RF_RX.lx =  0.3f;
-			if (key == "q") input.RF_RX.rx = -0.3f;
-			if (key == "e") input.RF_RX.rx =  0.3f;
+			if (mode == "keyboard") {
+				if (key == "w") input.RF_RX.ly =  0.3f;
+				if (key == "s") input.RF_RX.ly = -0.3f;
+				if (key == "a") input.RF_RX.lx = -0.3f;
+				if (key == "d") input.RF_RX.lx =  0.3f;
+				if (key == "q") input.RF_RX.rx = -0.3f;
+				if (key == "e") input.RF_RX.rx =  0.3f;
+			}
 
-			//lowstate->joystick.extract(input);
 			auto &joystick = lowstate->joystick;
 
 			// 键盘模拟的扳机立即生效，与按钮的按下沿同步
+			const auto lt_smooth = joystick.LT.smooth;
+			const auto rt_smooth = joystick.RT.smooth;
 			joystick.LT.smooth = 1.0f;
 			joystick.RT.smooth = 1.0f;
 
 			joystick.extract(input);
+			joystick.LT.smooth = lt_smooth;
+			joystick.RT.smooth = rt_smooth;
 		}
 		else
 		{

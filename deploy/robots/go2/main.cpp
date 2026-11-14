@@ -29,7 +29,8 @@ int main(int argc, char** argv)
     // Load parameters
     auto vm = param::helper(argc, argv);
 
-    if (param::config["keyboard_control"].as<bool>(false))
+    const auto control = param::config["control"];
+    if (control && control["mode"].as<std::string>("joystick") == "keyboard")
     {
         FSMState::keyboard = std::make_shared<Keyboard>();
     }

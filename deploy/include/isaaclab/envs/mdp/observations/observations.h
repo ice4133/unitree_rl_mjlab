@@ -4,6 +4,8 @@
 #pragma once
 
 #include "isaaclab/envs/manager_based_rl_env.h"
+#include <algorithm>
+#include <cmath>
 
 namespace isaaclab
 {
@@ -111,13 +113,16 @@ REGISTER_OBSERVATION(last_action)
 REGISTER_OBSERVATION(velocity_commands)
 {
     std::vector<float> obs(3);
-    auto & joystick = env->robot->data.joystick;
+    const auto & command = env->velocity_command();
+
+    if (!std::all_of(command.begin(), command.end(), [](float v) { return std::isfinite(v); }))
+        return obs;
 
     const auto cfg = env->cfg["commands"]["base_velocity"]["ranges"];
 
-    obs[0] = std::clamp(joystick->ly(), cfg["lin_vel_x"][0].as<float>(), cfg["lin_vel_x"][1].as<float>());
-    obs[1] = std::clamp(-joystick->lx(), cfg["lin_vel_y"][0].as<float>(), cfg["lin_vel_y"][1].as<float>());
-    obs[2] = std::clamp(-joystick->rx(), cfg["ang_vel_z"][0].as<float>(), cfg["ang_vel_z"][1].as<float>());
+    obs[0] = std::clamp(command[0], cfg["lin_vel_x"][0].as<float>(), cfg["lin_vel_x"][1].as<float>());
+    obs[1] = std::clamp(command[1], cfg["lin_vel_y"][0].as<float>(), cfg["lin_vel_y"][1].as<float>());
+    obs[2] = std::clamp(command[2], cfg["ang_vel_z"][0].as<float>(), cfg["ang_vel_z"][1].as<float>());
 
     return obs;
 }

@@ -29,7 +29,15 @@ int main(int argc, char** argv)
     // Load parameters
     auto vm = param::helper(argc, argv);
 
-    if (param::config["keyboard_control"].as<bool>(false))
+    const auto control = param::config["control"];
+    const auto mode = control ? control["mode"].as<std::string>("joystick") : "joystick";
+    if (mode != "joystick" && mode != "keyboard" && mode != "auto") {
+        spdlog::error("config.yaml control.mode must be joystick, keyboard or auto");
+        return EXIT_FAILURE;
+    }
+    spdlog::info("Velocity control mode: {}", mode);
+
+    if (mode == "keyboard" || (mode == "auto" && isatty(STDIN_FILENO)))
     {
         FSMState::keyboard = std::make_shared<Keyboard>();
     }
@@ -46,14 +54,19 @@ int main(int argc, char** argv)
     auto fsm = std::make_unique<CtrlFSM>(param::config["FSM"]);
     fsm->start();
 
+    if (mode == "auto")
+        std::cout << "Automatic velocity input enabled. Stand and enter Velocity using the state buttons/keys; "
+                     "manual movement axes are ignored.\n";
+
     if (FSMState::keyboard)
     {
-        std::cout << "Keyboard control: use this terminal for input.\n";
+        std::cout << "Use this terminal for state keys.\n";
         std::cout << "Press [1] to enter FixStand, then [2] to enter Velocity.\n";
-        std::cout << "Hold [W/S] to move forward/backward, [A/D] to move left/right, [Q/E] to turn.\n";
+        if (mode != "auto")
+            std::cout << "Hold [W/S] to move forward/backward, [A/D] to move left/right, [Q/E] to turn.\n";
         std::cout << "Press [0] to enter Passive (damping) mode.\n";
     }
-    else
+    if (!FSMState::keyboard || mode == "auto")
     {
         std::cout << "Press [L2 + up] to enter FixStand mode.\n";
         std::cout << "And then press [R2 + A] to start controlling the robot.\n";

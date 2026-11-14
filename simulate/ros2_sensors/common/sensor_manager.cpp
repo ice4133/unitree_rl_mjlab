@@ -1,6 +1,7 @@
 #include "common/sensor_manager.hpp"
 #include "camera/camera_sensor.hpp"
 #include "lidar/lidar_sensor.hpp"
+#include "state/odometry_publisher.hpp"
 #include "common/offscreen_context.hpp"
 
 #include <cmath>
@@ -117,6 +118,21 @@ void SensorManager::load_model(const mjModel* model, const mjData* data) {
     state.sensors.push_back(std::move(sensor));
   }
   if (!transforms.empty()) state.tf->sendTransform(transforms);
+  const auto odometry = state.config["odometry"];
+  if (odometry && odometry["enabled"].as<bool>(true)) {
+    OdometryConfig config;
+    config.free_joint = odometry["free_joint"].as<std::string>(config.free_joint);
+    config.topic = odometry["topic"].as<std::string>(config.topic);
+    config.frame_id = odometry["frame_id"].as<std::string>(config.frame_id);
+    config.publish_rate = odometry["publish_rate"].as<double>(config.publish_rate);
+    config.publish_tf = odometry["publish_tf"].as<bool>(config.publish_tf);
+    if (mj_name2id(model, mjOBJ_JOINT, config.free_joint.c_str()) < 0) {
+      RCLCPP_WARN(state.node->get_logger(), "Model has no odometry joint '%s'; skipping it",
+          config.free_joint.c_str());
+    } else {
+      state.sensors.push_back(std::make_unique<OdometryPublisher>(state.node, model, std::move(config)));
+    }
+  }
   update(model, data);
 }
 

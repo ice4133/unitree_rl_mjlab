@@ -5,6 +5,16 @@ enabled: true
 ros_domain_id: 10
 clock_publish_rate: 100.0
 
+# Ground-truth floating-base state, reusing the ROS context in domain 10.
+# Pose uses MuJoCo world coordinates named "odom"; twist uses the joint's body frame.
+odometry:
+  enabled: true
+  free_joint: floating_base_joint
+  topic: /odom
+  frame_id: odom
+  publish_rate: 50.0
+  publish_tf: true
+
 cameras:
   - name: front_camera
     enabled: true

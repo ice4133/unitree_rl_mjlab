@@ -1,7 +1,7 @@
 # MuJoCo ROS 2 sensors
 
-本模块直接编入 `unitree_mujoco` 进程，读取当前仿真状态并发布相机和 3D 雷达数据。
-相机和雷达实现移植自 `mujoco_ros2_control`，来源与改动见
+本模块直接编入 `unitree_mujoco` 进程，发布相机、3D 雷达和浮动基座真值里程计。
+相机、雷达和里程计实现移植自 `mujoco_ros2_control`，来源与改动见
 [NOTICE](NOTICE)，原许可证见 [LICENSE](LICENSE)。不需要另外运行该项目。
 
 ## 目录与职责
@@ -9,6 +9,7 @@
 - `camera/`：MJCF 相机参数、RGB/深度渲染、CameraInfo、ROS 图像发布。
 - `common/`：ROS 节点、仿真时间、TF、传感器生命周期、EGL 上下文。
 - `lidar/`：批量射线检测、XYZ 点云发布、独立工作线程；详见 [雷达说明](lidar/README.md)。
+- `state/`：浮动基座位姿、机身坐标系速度和动态 TF；详见 [里程计说明](state/README.md)。
 - `config/sensors.yaml`：开关、ROS 域、相机与雷达参数和话题。
 
 相机位置、朝向、视场角和目标分辨率读取 MJCF；默认使用 Go2W 的
@@ -24,7 +25,7 @@ EGL display 在传感器管理器生命周期中复用；全部渲染线程结�
 | 通道 | 实现 | Domain ID |
 | --- | --- | --- |
 | 宇树 `rt/lowcmd`、`rt/lowstate` | 原有 SDK2 / Cyclone DDS | **0** |
-| ROS 相机、雷达、时钟、TF | `rclcpp` / Fast DDS | **10** |
+| ROS 相机、雷达、里程计、时钟、TF | `rclcpp` / Fast DDS | **10** |
 
 ROS Context 通过 API 显式设置域 10，即使启动终端里 `ROS_DOMAIN_ID=0`，
 相机也不会发布到域 0。宇树域仍由 `simulate/config.yaml` 的 `domain_id: 0`
@@ -80,6 +81,9 @@ ros2 run tf2_ros tf2_echo base_link front_camera_optical_frame
 ros2 topic hz /lidar/points
 ros2 topic echo /lidar/points --once --no-arr
 ros2 run tf2_ros tf2_echo base_link mid360_frame
+ros2 topic echo /odom --once
+ros2 topic hz /odom
+ros2 run tf2_ros tf2_echo odom base_link
 ```
 
 预期可见：
@@ -89,6 +93,8 @@ ros2 run tf2_ros tf2_echo base_link mid360_frame
 /camera/depth/image_raw   sensor_msgs/msg/Image       32FC1，米
 /camera/camera_info       sensor_msgs/msg/CameraInfo
 /lidar/points             sensor_msgs/msg/PointCloud2  XYZ，米
+/odom                    nav_msgs/msg/Odometry       真值位姿和机身速度
+/tf                      tf2_msgs/msg/TFMessage      odom -> base_link
 /clock                   rosgraph_msgs/msg/Clock
 /tf_static               tf2_msgs/msg/TFMessage
 ```
@@ -110,7 +116,14 @@ ROS_DOMAIN_ID=0 ros2 topic list --no-daemon --spin-time 2
 ROS_DOMAIN_ID=10 ros2 topic list --no-daemon --spin-time 2
 ```
 
-域 0 不应出现 `/camera/*` 或 `/lidar/points`，域 10 应出现上述 ROS 话题。
+域 0 不应出现 `/camera/*`、`/lidar/points` 或 `/odom`，域 10 应出现上述 ROS 话题。
+
+## 真值里程计
+
+默认在 domain 10 发布 50 Hz 的 `/odom` 和同时间戳的 `odom -> base_link`。
+读取 MJCF `floating_base_joint` 的完整三维状态，速度按 ROS 约定在机身坐标系
+表达；重置后立即恢复采样。配置与验证见 [state/README.md](state/README.md)。
+该数据可为后续 Nav2 接入提供里程计；地图定位与导航速度接口需另行接入。
 
 ## 3D 雷达
 
