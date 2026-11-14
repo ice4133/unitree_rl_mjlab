@@ -8,6 +8,9 @@
 
 ## 🛠️ 使用指南
 
+Go2W 的 ROS 2 建图与自动避障导航见 [autonomy 使用说明](autonomy/README.md)。
+导航通过 `/cmd_vel` 连接部署端 `control.mode: auto`，复用已有速度跟踪策略。
+
 ### 1. 速度跟踪训练
 
 激活 Python 环境并执行 `pip install -e .` 后，在项目根目录运行：

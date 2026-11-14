@@ -51,7 +51,10 @@ ROS_DOMAIN_ID=10 ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist \
 尚未收到指令、收到非有限值或超过 `control.ros.timeout`（默认 0.5 秒）未收到新指令时，
 目标速度归零，保持策略运行。超时按单调时钟计算，不依赖 `/clock`。
 所有来源统一沿用策略 `params/deploy.yaml` 的速度范围限幅；当前策略横移范围为 0。
-未来 Nav2 可以直接发布到同一个话题。
+`autonomy` 已接入 Nav2；运行 `./autonomy/run.sh navigation`，再用
+`./autonomy/run.sh goal --x 4 --y 0` 或 RViz 设置目标即可自动绕障。
+导航的 `/cmd_vel` 由最终速度守护独占发布，避免同时手动发布到该话题。
+完整启动顺序见 [autonomy 说明](../../../autonomy/README.md)。
 
 公共 `ManagerBasedRLEnv` 的第三个可选参数是 `isaaclab::VelocityCommandSource`，
 返回 `{vx, vy, wz}`。默认仍读取手柄（键盘沿用已有的手柄模拟路径），
@@ -81,8 +84,8 @@ ROS_DOMAIN_ID=10 ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist \
 
 ## 接入训练后的策略
 
-当前仓库没有训练好的 Go2W 策略。本目录没有复制 Go2 的权重。
-把 Go2W 的 ONNX 放到：
+当前工作目录已有可加载的 Go2W ONNX，自动导航复用该速度跟踪策略。
+替换训练结果时，把对应的 Go2W ONNX 放到：
 
 ```
 config/policy/velocity/v0/exported/policy.onnx

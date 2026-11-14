@@ -1,0 +1,11 @@
+<mujoco model="go2w_mapping_room">
+  <include file="scene_go2w.xml" />
+  <worldbody>
+    <!-- Flat 12 x 10 m room, clear space around the spawn and the existing front box. -->
+    <geom name="mapping_wall_east" type="box" pos="6 0 1" size="0.1 5 1" group="0" rgba="0.7 0.7 0.75 1" />
+    <geom name="mapping_wall_west" type="box" pos="-6 0 1" size="0.1 5 1" group="0" rgba="0.7 0.7 0.75 1" />
+    <geom name="mapping_wall_north" type="box" pos="0 5 1" size="6 0.1 1" group="0" rgba="0.75 0.7 0.7 1" />
+    <geom name="mapping_wall_south" type="box" pos="0 -5 1" size="6 0.1 1" group="0" rgba="0.75 0.7 0.7 1" />
+    <geom name="mapping_pillar" type="box" pos="-2 2 0.6" size="0.3 0.4 0.6" group="0" rgba="0.2 0.6 0.8 1" />
+  </worldbody>
+</mujoco>

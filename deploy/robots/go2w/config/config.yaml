@@ -2,7 +2,7 @@ control:
   # Restart go2w_ctrl after changing the mode.
   # joystick/keyboard: manual velocity and state input.
   # auto: ROS velocity; gamepad state buttons and terminal state keys remain available.
-  mode: joystick # joystick | keyboard | auto
+  mode: auto # joystick | keyboard | auto
   ros:
     topic: /cmd_vel # geometry_msgs/msg/Twist: body-frame vx/vy [m/s], wz [rad/s].
     domain_id: 10 # Independent of Unitree SDK2 domain 0 and shell ROS_DOMAIN_ID.
