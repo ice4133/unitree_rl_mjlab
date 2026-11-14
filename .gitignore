@@ -15,3 +15,4 @@ src/assets/motions/g1/dance1_subject2.npz
 simulate/build
 .vscode
 __pycache__
+unitree_rl_mjlab.code-workspace

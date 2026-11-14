@@ -1,5 +1,5 @@
 # Keyboard: 1=stand, 2=policy, 0=passive; WASD=move, Q/E=turn.
-keyboard_control: true
+keyboard_control: false
 
 FSM:
   _:
@@ -12,15 +12,16 @@ FSM:
       type: RLBase
   Passive:
     transitions:
-      FixStand: LT + up.on_pressed
+      # Accept either press order; LT smoothing can delay the trigger edge.
+      FixStand: (LT + up.on_pressed) | (LT.on_pressed + up)
     # All motor arrays here use SDK order: FR, FL, RR, RL legs, then wheels.
     # The Go2 DDS packet has 20 slots; the last four slots are unused.
     mode: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]
     kd: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2]
   FixStand:
     transitions:
-      Passive: LT + B.on_pressed
-      Velocity: RT + A.on_pressed
+      Passive: (LT + B.on_pressed) | (LT.on_pressed + B)
+      Velocity: (RT + A.on_pressed) | (RT.on_pressed + A)
     kp: [60, 80, 80, 60, 80, 80, 60, 80, 80, 60, 80, 80, 0, 0, 0, 0]
     kd: [5, 4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 2, 2, 2, 2]
     ts: [0, 1, 2]
@@ -30,5 +31,5 @@ FSM:
       - [0.1, 0.9, -1.8, -0.1, 0.9, -1.8, 0.1, 0.9, -1.8, -0.1, 0.9, -1.8, 0, 0, 0, 0]
   Velocity:
     transitions:
-      Passive: LT + B.on_pressed
+      Passive: (LT + B.on_pressed) | (LT.on_pressed + B)
     policy_dir: config/policy/velocity/v0

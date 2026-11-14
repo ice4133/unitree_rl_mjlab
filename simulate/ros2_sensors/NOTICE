@@ -1,8 +1,13 @@
-Camera rendering, image conversion and EGL initialization are adapted from:
+Camera rendering, image conversion, EGL initialization, lidar raycasting and
+XYZ point cloud conversion are adapted from:
   ros-controls/mujoco_ros2_control
   commit 9e2e8323688f86a4d064c91ff0763675b8b575f2
   mujoco_ros2_control_plugins/src/camera_plugin.cpp
   mujoco_ros2_control_plugins/src/camera_plugin.hpp
+  mujoco_extensions/mujoco_3d_lidar/src/3dlidar.cpp
+  mujoco_extensions/mujoco_3d_lidar/include/mujoco_3d_lidar/3dlidar.h
+  mujoco_ros2_control_plugins/src/mujoco_3d_lidar_plugin.cpp
+  mujoco_ros2_control_plugins/src/mujoco_3d_lidar_plugin.hpp
   https://github.com/ros-controls/mujoco_ros2_control
 
 Copyright (c) 2026, United States Government, as represented by the
@@ -13,3 +18,7 @@ Licensed under the Apache License, Version 2.0; see LICENSE.
 Modifications: standalone sensor lifecycle for unitree_mujoco, ROS domain 10,
 Fast DDS, MuJoCo 3.3.6 linkage, double-buffered rendering snapshots, simulation
 clock, optical-frame TF, reset/unload handling, and invalid-depth conversion.
+Lidar modifications: SensorManager integration without ros2_control/pluginlib,
+MuJoCo 3.3.6 ray API, owned double-buffered snapshots with refreshed geometry,
+simulation-time rate control, reset generation handling, sensor QoS, site TF,
+configuration validation, and non-duplicated full-circle azimuth sampling.

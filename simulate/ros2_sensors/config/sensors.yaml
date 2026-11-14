@@ -13,3 +13,21 @@ cameras:
     color_topic: /camera/color/image_raw
     depth_topic: /camera/depth/image_raw
     info_topic: /camera/camera_info
+
+# Upstream regular ray grid with MID-360 FOV; not its non-repetitive scan pattern.
+# Angles are in radians. XYZ only, one simulation timestamp per cloud.
+lidars:
+  - name: mid360
+    site: mid360
+    enabled: true
+    frame_id: mid360_frame
+    topic: /lidar/points
+    publish_rate: 10.0
+    resolution: [1000, 20]
+    azimuth_range: [-3.141592653589793, 3.141592653589793]
+    elevation_range: [-0.122173047639603, 0.907571211037051]
+    range_min: 0.1
+    range_max: 40.0
+    # Environment (0) and collision shapes (3), excluding visual-only meshes (2).
+    # An empty list includes all geom groups.
+    geom_groups: [0, 3]

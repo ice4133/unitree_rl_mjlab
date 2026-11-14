@@ -12,6 +12,9 @@ ctest --test-dir deploy/robots/go2w/build --output-on-failure
 ./deploy/robots/go2w/build/go2w_ctrl --network=lo
 ```
 
+Linux 构建会将 Unitree SDK2 的动态库路径写入可执行文件的 RPATH。
+即使当前终端已加载 ROS 环境，也无需手动设置 `LD_LIBRARY_PATH`。
+
 控制器需收到 `rt/lowstate` 后才会继续启动。仿真器使用根目录的
 `simulate/config.yaml`，目前已选择 `scene_go2w.xml`。
 
@@ -19,6 +22,9 @@ ctest --test-dir deploy/robots/go2w/build --output-on-failure
 当前平地滚动任务的横向速度固定为 0，A/D 不产生横移命令。
 使用遥控器时，将 `config/config.yaml` 的
 `keyboard_control` 设为 `false`，状态切换按入口提示操作。
+仿真手柄还需在 `simulate/config.yaml` 设置 `use_joystick: 1` 和匹配的
+`joystick_type`。按住 L2（LT）并按十字方向键上进入站立，状态切换组合键
+支持任一按下顺序；修改这些配置后需重启对应程序。
 
 ## 电机和动作顺序
 

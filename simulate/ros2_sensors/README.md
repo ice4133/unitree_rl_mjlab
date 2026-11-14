@@ -1,15 +1,15 @@
 # MuJoCo ROS 2 sensors
 
-本模块直接编入 `unitree_mujoco` 进程，读取当前仿真状态并发布相机数据。
-相机实现移植自 `mujoco_ros2_control` 的 `CameraPlugin`，来源与改动见
+本模块直接编入 `unitree_mujoco` 进程，读取当前仿真状态并发布相机和 3D 雷达数据。
+相机和雷达实现移植自 `mujoco_ros2_control`，来源与改动见
 [NOTICE](NOTICE)，原许可证见 [LICENSE](LICENSE)。不需要另外运行该项目。
 
 ## 目录与职责
 
 - `camera/`：MJCF 相机参数、RGB/深度渲染、CameraInfo、ROS 图像发布。
 - `common/`：ROS 节点、仿真时间、TF、传感器生命周期、EGL 上下文。
-- `lidar/`：后续雷达接入位置，目前没有雷达实现或虚构的雷达话题。
-- `config/sensors.yaml`：开关、ROS 域、相机频率与话题。
+- `lidar/`：批量射线检测、XYZ 点云发布、独立工作线程；详见 [雷达说明](lidar/README.md)。
+- `config/sensors.yaml`：开关、ROS 域、相机与雷达参数和话题。
 
 相机位置、朝向、视场角和目标分辨率读取 MJCF；默认使用 Go2W 的
 `front_camera`（640×480）。渲染使用独立 EGL 上下文，不随 GUI 观察视角改变。
@@ -24,7 +24,7 @@ EGL display 在传感器管理器生命周期中复用；全部渲染线程结�
 | 通道 | 实现 | Domain ID |
 | --- | --- | --- |
 | 宇树 `rt/lowcmd`、`rt/lowstate` | 原有 SDK2 / Cyclone DDS | **0** |
-| ROS 相机、时钟、TF | `rclcpp` / Fast DDS | **10** |
+| ROS 相机、雷达、时钟、TF | `rclcpp` / Fast DDS | **10** |
 
 ROS Context 通过 API 显式设置域 10，即使启动终端里 `ROS_DOMAIN_ID=0`，
 相机也不会发布到域 0。宇树域仍由 `simulate/config.yaml` 的 `domain_id: 0`
@@ -57,7 +57,7 @@ Fast DDS，ROS Context 固定为域 10，宇树 SDK 固定使用配置中的域 
 默认启用 ROS 传感器。`config/sensors.yaml` 中 `enabled: false` 可在运行时
 关闭；`-DENABLE_ROS2_SENSORS=OFF` 可构建不依赖 ROS 的原有仿真器。
 配置路径由 `simulate/config.yaml` 的 `ros2_sensors_config` 指定，
-相对路径以 `simulate/` 为基准。找不到配置中的相机时会提示并跳过，其他机器人
+相对路径以 `simulate/` 为基准。找不到配置中的相机或雷达 site 时会提示并跳过，其他机器人
 可以使用各自的传感器配置。
 
 ## 验收命令
@@ -77,6 +77,9 @@ ros2 topic echo /camera/camera_info --once
 ros2 topic echo /camera/depth/image_raw --once --no-arr
 ros2 topic echo /clock --once
 ros2 run tf2_ros tf2_echo base_link front_camera_optical_frame
+ros2 topic hz /lidar/points
+ros2 topic echo /lidar/points --once --no-arr
+ros2 run tf2_ros tf2_echo base_link mid360_frame
 ```
 
 预期可见：
@@ -85,6 +88,7 @@ ros2 run tf2_ros tf2_echo base_link front_camera_optical_frame
 /camera/color/image_raw   sensor_msgs/msg/Image       rgb8
 /camera/depth/image_raw   sensor_msgs/msg/Image       32FC1，米
 /camera/camera_info       sensor_msgs/msg/CameraInfo
+/lidar/points             sensor_msgs/msg/PointCloud2  XYZ，米
 /clock                   rosgraph_msgs/msg/Clock
 /tf_static               tf2_msgs/msg/TFMessage
 ```
@@ -106,10 +110,13 @@ ROS_DOMAIN_ID=0 ros2 topic list --no-daemon --spin-time 2
 ROS_DOMAIN_ID=10 ros2 topic list --no-daemon --spin-time 2
 ```
 
-域 0 不应出现 `/camera/*`，域 10 应出现上述 ROS 话题。
+域 0 不应出现 `/camera/*` 或 `/lidar/points`，域 10 应出现上述 ROS 话题。
 
-## 后续雷达
+## 3D 雷达
 
-新增雷达实现 `common/sensor.hpp` 的 `sample/reset/stop`，在 SensorManager
-加载时注册，共享域 10 的 ROS 节点与时间。雷达发布标准 LaserScan/PointCloud2；
-障碍提取和避障决策放到后续的 `autonomy/`，不放进传感器模块。
+Go2W 场景默认启用 10 Hz、1000×20 的 XYZ 点云，视场为水平 360°、
+垂直 -7°～52°，量程 0.1～40 m。采用上游规则射线网格和单时刻快照，
+仅采用 MID-360 的视场参数，不模拟其非重复扫描轨迹或 Livox 协议。
+雷达无需 EGL，使用私有仿真快照和独立计算线程，与相机一起由 SensorManager
+管理。点云、TF、参数、生命周期和测试详见 [lidar/README.md](lidar/README.md)。
+障碍提取和避障决策留给后续数据处理。

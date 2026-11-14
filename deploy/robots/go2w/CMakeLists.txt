@@ -38,3 +38,13 @@ add_library(${PROJECT_NAME}_lib ${ADD_SRC_LIST})
 link_libraries(${PROJECT_NAME}_lib)
 
 add_executable(go2w_ctrl main.cpp)
+
+# Keep SDK2's Cyclone C and C++ libraries matched even when ROS is sourced.
+# ELF RPATH takes priority over ROS library paths in LD_LIBRARY_PATH.
+if(UNIX AND NOT APPLE)
+  get_target_property(UNITREE_DDS_LIBRARY ddsc IMPORTED_LOCATION)
+  get_filename_component(UNITREE_DDS_LIBRARY_DIR "${UNITREE_DDS_LIBRARY}" DIRECTORY)
+  set_property(TARGET go2w_ctrl APPEND PROPERTY BUILD_RPATH "${UNITREE_DDS_LIBRARY_DIR}")
+  # LINK_FLAGS preserves compatibility with the CMake 3.12 minimum above.
+  set_property(TARGET go2w_ctrl APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--disable-new-dtags")
+endif()

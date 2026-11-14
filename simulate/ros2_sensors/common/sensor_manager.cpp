@@ -1,5 +1,6 @@
 #include "common/sensor_manager.hpp"
 #include "camera/camera_sensor.hpp"
+#include "lidar/lidar_sensor.hpp"
 #include "common/offscreen_context.hpp"
 
 #include <cmath>
@@ -90,6 +91,28 @@ void SensorManager::load_model(const mjModel* model, const mjData* data) {
     camera.depth_topic = entry["depth_topic"].as<std::string>("/camera/depth/image_raw");
     camera.info_topic = entry["info_topic"].as<std::string>("/camera/camera_info");
     auto sensor = std::make_unique<CameraSensor>(state.node, model, std::move(camera));
+    transforms.push_back(sensor->static_transform());
+    state.sensors.push_back(std::move(sensor));
+  }
+  for (const auto& entry : state.config["lidars"]) {
+    if (!entry["enabled"].as<bool>(true)) continue;
+    LidarConfig lidar;
+    lidar.name = entry["name"].as<std::string>();
+    lidar.site = entry["site"].as<std::string>(lidar.name);
+    if (mj_name2id(model, mjOBJ_SITE, lidar.site.c_str()) < 0) {
+      RCLCPP_WARN(state.node->get_logger(), "Model has no lidar site '%s'; skipping it", lidar.site.c_str());
+      continue;
+    }
+    lidar.frame_id = entry["frame_id"].as<std::string>(lidar.name + "_frame");
+    lidar.topic = entry["topic"].as<std::string>(lidar.topic);
+    lidar.publish_rate = entry["publish_rate"].as<double>(lidar.publish_rate);
+    lidar.range_min = entry["range_min"].as<double>(lidar.range_min);
+    lidar.range_max = entry["range_max"].as<double>(lidar.range_max);
+    if (entry["resolution"]) lidar.resolution = entry["resolution"].as<std::array<int, 2>>();
+    if (entry["azimuth_range"]) lidar.azimuth_range = entry["azimuth_range"].as<std::array<double, 2>>();
+    if (entry["elevation_range"]) lidar.elevation_range = entry["elevation_range"].as<std::array<double, 2>>();
+    if (entry["geom_groups"]) lidar.geom_groups = entry["geom_groups"].as<std::vector<int>>();
+    auto sensor = std::make_unique<LidarSensor>(state.node, model, std::move(lidar));
     transforms.push_back(sensor->static_transform());
     state.sensors.push_back(std::move(sensor));
   }

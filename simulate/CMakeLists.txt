@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(unitree_mujoco)
+include(CTest)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")

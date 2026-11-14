@@ -115,7 +115,7 @@ namespace
     try {
       sensors->load_model(model, data);
     } catch (const std::exception& error) {
-      std::cerr << "ROS 2 camera initialization failed: " << error.what() << '\n';
+      std::cerr << "ROS 2 sensor initialization failed: " << error.what() << '\n';
       sensors.reset();
       std::exit(EXIT_FAILURE);
     }
