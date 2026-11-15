@@ -1,8 +1,10 @@
 # Upstream components
 
-- `src/third_party/pointcloud_to_laserscan` is an unchanged source snapshot of
+- `src/third_party/pointcloud_to_laserscan` is a source snapshot of
   https://github.com/ros-perception/pointcloud_to_laserscan, branch `humble`,
   commit `59bf996fb3ee7db0026a5cd3ce0d2a39d2e602ea` (BSD-3-Clause).
+  The only local build change enables `CMAKE_EXPORT_COMPILE_COMMANDS` for clangd;
+  the converter implementation is unchanged.
   Its LICENSE and copyright headers are retained. `colcon.meta` disables only
   upstream lint tests; our own perception tests remain enabled.
 - SLAM uses the installed ROS 2 Humble `slam_toolbox` package. The mapper

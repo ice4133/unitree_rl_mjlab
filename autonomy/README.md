@@ -46,6 +46,24 @@ nav2_collision_monitor、rviz2、tf2、message_filters、ament_cmake_gtest、ame
 点云转换包以源码随工作空间构建，来源、版本和许可证见 [THIRD_PARTY.md](THIRD_PARTY.md)。
 其他机器可先用 `rosdep install --from-paths autonomy/src --ignore-src -r -y` 安装缺失依赖。
 
+## C++ 编辑器索引
+
+使用 VS Code 的 clangd 扩展。各包的 `CMakeLists.txt` 显式开启
+`CMAKE_EXPORT_COMPILE_COMMANDS`；执行 `./autonomy/run.sh build` 后，包含 C++
+编译目标的包会在 `autonomy/build/<包名>/compile_commands.json` 生成编译数据库。
+只有 launch、配置和 Python 脚本的包没有 C++ 编译目标，不会生成该文件。
+
+`autonomy/.clangd` 参照 `simulate/.clangd` 和 `deploy/.clangd`，分别将感知包和
+第三方转换包的源码、头文件指向对应数据库。clangd 因而能读取实际编译时的
+ROS 头文件路径、宏定义和编译选项，无需手写 `/opt/ros/humble/include` 列表。
+从工程根目录或单独打开 `autonomy/` 都会读取此配置。
+第三方目录仅关闭 `UnusedIncludes` 整理提示，以保留上游头文件组织方式并避免
+ROS Humble 转发头文件造成的误报；语法、类型和找不到头文件等诊断仍然启用。
+
+VS Code 中将 `C_Cpp.intelliSenseEngine` 设为 `disabled`，由 clangd 提供 C++
+诊断和跳转。若构建后旧的波浪线仍存在，执行命令面板中的
+`clangd: Restart language server` 以重新加载索引。
+
 ## 运行建图
 
 在仓库根目录，分别打开终端：

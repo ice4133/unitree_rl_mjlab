@@ -1,0 +1,19 @@
+# colcon generates a separate compilation database for each ROS package.
+CompileFlags:
+  Add: [-std=c++17]
+
+---
+If:
+  PathMatch: 'src/autonomy_perception/.*'
+CompileFlags:
+  CompilationDatabase: build/autonomy_perception
+
+---
+If:
+  PathMatch: 'src/third_party/pointcloud_to_laserscan/.*'
+CompileFlags:
+  CompilationDatabase: build/pointcloud_to_laserscan
+Diagnostics:
+  # Preserve upstream includes, including Humble's forwarding/umbrella headers.
+  # Compiler diagnostics remain enabled; only include-cleanup hints are skipped.
+  UnusedIncludes: None

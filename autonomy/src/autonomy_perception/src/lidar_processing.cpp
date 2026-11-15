@@ -1,9 +1,7 @@
 #include "autonomy_perception/lidar_processing.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <cstring>
-#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <tf2/utils.h>
