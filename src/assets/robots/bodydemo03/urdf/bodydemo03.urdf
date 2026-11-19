@@ -1,0 +1,971 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="##Bodydemo03.SLDASM">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.00435120711226353 -0.000636944308567702 0.0159040912788772"
+        rpy="0 0 0" />
+      <mass
+        value="12.785" />
+      <inertia
+        ixx="0.15267343"
+        ixy="-0.00046875"
+        ixz="0.00005037"
+        iyy="0.19732802"
+        iyz="0.00435732"
+        izz="0.09775740" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.86667 0.9098 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link
+    name="fl_hip_link">
+    <inertial>
+      <origin
+        xyz="-0.00288466340497762 -0.0314030147886022 -0.000402958385543122"
+        rpy="0 0 0" />
+      <mass
+        value="0.69944" />
+      <inertia
+        ixx="0.00049826"
+        ixy="2.83E-05"
+        ixz="8.1E-07"
+        iyy="0.00050891"
+        iyz="-6.63E-06"
+        izz="0.00059861" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_hip_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_hip_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fl_hip_joint"
+    type="revolute">
+    <origin
+      xyz="0.217474558772093 0.0874999999999997 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="fl_hip_link" />
+    <axis
+      xyz="-1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="fl_thigh_link">
+    <inertial>
+      <origin
+        xyz="-0.0269220004036679 -0.0306453660034738 -0.013220966085075"
+        rpy="0 0 0" />
+      <mass
+        value="1.0341" />
+      <inertia
+        ixx="0.00227316"
+        ixy="0.00084941"
+        ixz="-0.00195553"
+        iyy="0.0052621"
+        iyz="0.00043789"
+        izz="0.00466487" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_thigh_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_thigh_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fl_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.0912999999999871 0"
+      rpy="0 0 0" />
+    <parent
+      link="fl_hip_link" />
+    <child
+      link="fl_thigh_link" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="fl_calf_link">
+    <inertial>
+      <origin
+        xyz="0.173732637668876 -0.00723432501506124 -0.111123748092798"
+        rpy="0 0 0" />
+      <mass
+        value="0.67596" />
+      <inertia
+        ixx="0.0012649"
+        ixy="9.426E-05"
+        ixz="0.0012414"
+        iyy="0.0033531"
+        iyz="-6.978E-05"
+        izz="0.0022081" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_calf_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.77647 0.75686 0.73725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_calf_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fl_calf_joint"
+    type="revolute">
+    <origin
+      xyz="-0.19306734577425 0 -0.124999999982744"
+      rpy="0 0 0" />
+    <parent
+      link="fl_thigh_link" />
+    <child
+      link="fl_calf_link" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="fl_foot_link">
+    <inertial>
+      <origin
+        xyz="1.79413616566149E-06 -0.000912007017585925 -5.64124039925673E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.26239" />
+      <inertia
+        ixx="0.00062168"
+        ixy="0"
+        ixz="0"
+        iyy="0.00122847"
+        iyz="0"
+        izz="0.00062167" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_foot_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fl_foot_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fl_foot_joint"
+    type="continuous">
+    <origin
+      xyz="0.193067345751907 0.0307999999999862 -0.125000000017255"
+      rpy="0 0 0" />
+    <parent
+      link="fl_calf_link" />
+    <child
+      link="fl_foot_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link
+    name="fr_hip_link">
+    <inertial>
+      <origin
+        xyz="-0.00288466340497778 0.031403014788602 0.000402958385543087"
+        rpy="0 0 0" />
+      <mass
+        value="0.69944" />
+      <inertia
+        ixx="0.00049826"
+        ixy="-2.83E-05"
+        ixz="-8.1E-07"
+        iyy="0.00050891"
+        iyz="-6.63E-06"
+        izz="0.00059861" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_hip_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_hip_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fr_hip_joint"
+    type="revolute">
+    <origin
+      xyz="0.217474558772093 -0.0875000000000001 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="fr_hip_link" />
+    <axis
+      xyz="-1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="fr_thigh_link">
+    <inertial>
+      <origin
+        xyz="-0.0269511878260825 0.0305305548072641 -0.0132696909944915"
+        rpy="0 0 0" />
+      <mass
+        value="1.0321" />
+      <inertia
+        ixx="0.00226512"
+        ixy="-0.00084766"
+        ixz="-0.00195479"
+        iyy="0.00526044"
+        iyz="-0.00043501"
+        izz="0.00465761" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_thigh_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.77647 0.75686 0.73725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_thigh_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fr_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.0913000000000153 0"
+      rpy="0 0 0" />
+    <parent
+      link="fr_hip_link" />
+    <child
+      link="fr_thigh_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="fr_calf_link">
+    <inertial>
+      <origin
+        xyz="0.173844928375313 0.00723432399089674 -0.111018320886404"
+        rpy="0 0 0" />
+      <mass
+        value="0.67596" />
+      <inertia
+        ixx="0.00126475"
+        ixy="-9.547E-05"
+        ixz="0.00124095"
+        iyy="0.00335404"
+        iyz="6.864E-05"
+        izz="0.00220913" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_calf_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.77647 0.75686 0.73725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_calf_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fr_calf_joint"
+    type="revolute">
+    <origin
+      xyz="-0.193067345774251 0 -0.124999999982742"
+      rpy="0 0 0" />
+    <parent
+      link="fr_thigh_link" />
+    <child
+      link="fr_calf_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="fr_foot_link">
+    <inertial>
+      <origin
+        xyz="-5.73210289872561E-07 0.000912006985863384 1.79114118703527E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.26239" />
+      <inertia
+        ixx="0.00062167"
+        ixy="0"
+        ixz="0"
+        iyy="0.0012285"
+        iyz="0"
+        izz="0.00062168" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_foot_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/fr_foot_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="fr_foot_joint"
+    type="continuous">
+    <origin
+      xyz="0.193067345751907 -0.0307999999999859 -0.125000000017257"
+      rpy="0 0 0" />
+    <parent
+      link="fr_calf_link" />
+    <child
+      link="fr_foot_link" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+
+  <link
+    name="rl_hip_link">
+    <inertial>
+      <origin
+        xyz="0.0028846634049777 -0.0314030147886021 0.000402958385543481"
+        rpy="0 0 0" />
+      <mass
+        value="0.69944" />
+      <inertia
+        ixx="0.00049826"
+        ixy="-2.83E-05"
+        ixz="8.1E-07"
+        iyy="0.00050891"
+        iyz="6.63E-06"
+        izz="0.00059861" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_hip_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_hip_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rl_hip_joint"
+    type="revolute">
+    <origin
+      xyz="-0.217474558772093 0.0875000000000006 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="rl_hip_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="rl_thigh_link">
+    <inertial>
+      <origin
+        xyz="-0.0269218242910762 -0.0306453793849444 -0.0132195944525783"
+        rpy="0 0 0" />
+      <mass
+        value="1.0341" />
+      <inertia
+        ixx="0.00227321"
+        ixy="0.00084941"
+        ixz="-0.00195557"
+        iyy="0.00526216"
+        iyz="0.0004379"
+        izz="0.00466488" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_thigh_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.77647 0.75686 0.73725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_thigh_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rl_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.0912999999999876 0"
+      rpy="0 0 0" />
+    <parent
+      link="rl_hip_link" />
+    <child
+      link="rl_thigh_link" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="rl_calf_link">
+    <inertial>
+      <origin
+        xyz="0.173732637679526 -0.00723432501544907 -0.111123748078107"
+        rpy="0 0 0" />
+      <mass
+        value="0.67596" />
+      <inertia
+        ixx="0.0012649"
+        ixy="9.426E-05"
+        ixz="0.0012414"
+        iyy="0.0033531"
+        iyz="-6.978E-05"
+        izz="0.0022081" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_calf_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.77647 0.75686 0.73725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_calf_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rl_calf_joint"
+    type="revolute">
+    <origin
+      xyz="-0.193067345763078 0 -0.125"
+      rpy="0 0 0" />
+    <parent
+      link="rl_thigh_link" />
+    <child
+      link="rl_calf_link" />
+    <axis
+      xyz="0 -1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="rl_foot_link">
+    <inertial>
+      <origin
+        xyz="1.79419663592917E-06 -0.000912007019633038 -5.64105090861133E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.26239" />
+      <inertia
+        ixx="0.00062168"
+        ixy="0"
+        ixz="0"
+        iyy="0.00122847"
+        iyz="0"
+        izz="0.00062167" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_foot_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rl_foot_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rl_foot_joint"
+    type="continuous">
+    <origin
+      xyz="0.193067345763079 0.0307999999999875 -0.124999999999999"
+      rpy="0 0 0" />
+    <parent
+      link="rl_calf_link" />
+    <child
+      link="rl_foot_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link
+    name="rr_hip_link">
+    <inertial>
+      <origin
+        xyz="0.00288466340497764 0.0314030147886021 -0.000402958385543502"
+        rpy="0 0 0" />
+      <mass
+        value="0.69944" />
+      <inertia
+        ixx="0.00049826"
+        ixy="2.83E-05"
+        ixz="-8.1E-07"
+        iyy="0.00050891"
+        iyz="6.63E-06"
+        izz="0.00059861" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_hip_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_hip_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rr_hip_joint"
+    type="revolute">
+    <origin
+      xyz="-0.217474558772093 -0.0874999999999992 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="rr_hip_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="rr_thigh_link">
+    <inertial>
+      <origin
+        xyz="-0.0269219941317352 0.0306454028275143 -0.0132197719951247"
+        rpy="0 0 0" />
+      <mass
+        value="1.0341" />
+      <inertia
+        ixx="0.0022732"
+        ixy="-0.0008494"
+        ixz="-0.00195557"
+        iyy="0.00526214"
+        iyz="-0.00043792"
+        izz="0.00466487" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_thigh_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.77647 0.75686 0.73725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_thigh_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rr_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.0913000000000146 0"
+      rpy="0 0 0" />
+    <parent
+      link="rr_hip_link" />
+    <child
+      link="rr_thigh_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="rr_calf_link">
+    <inertial>
+      <origin
+        xyz="0.173844928385236 0.00723432399089691 -0.111018320870865"
+        rpy="0 0 0" />
+      <mass
+        value="0.67596" />
+      <inertia
+        ixx="0.00126475"
+        ixy="-9.547E-05"
+        ixz="0.00124095"
+        iyy="0.00335404"
+        iyz="6.864E-05"
+        izz="0.00220913" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_calf_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.86667 0.9098 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_calf_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rr_calf_joint"
+    type="revolute">
+    <origin
+      xyz="-0.19306734576308 0 -0.124999999999998"
+      rpy="0 0 0" />
+    <parent
+      link="rr_thigh_link" />
+    <child
+      link="rr_calf_link" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+
+  <link
+    name="rr_foot_link">
+    <inertial>
+      <origin
+        xyz="-5.73603955195123E-07 0.000912007069870852 1.79107005621182E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.26239" />
+      <inertia
+        ixx="0.00062167"
+        ixy="0"
+        ixz="0"
+        iyy="0.00122847"
+        iyz="0"
+        izz="0.00062168" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_foot_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://##Bodydemo03.SLDASM/meshes/rr_foot_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="rr_foot_joint"
+    type="continuous">
+    <origin
+      xyz="0.19306734576308 -0.0307999999999855 -0.125"
+      rpy="0 0 0" />
+    <parent
+      link="rr_calf_link" />
+    <child
+      link="rr_foot_link" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+</robot>

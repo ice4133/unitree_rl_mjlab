@@ -1,10 +1,13 @@
 # Unitree RL Mjlab — Go2W
 
 This project uses [mjlab](https://github.com/mujocolab/mjlab) and MuJoCo to train
-and deploy velocity policies for Unitree Go2W. This checkout contains only Go2W
-robot assets, task configurations and robot-specific deployment code.
+and deploy velocity policies for Unitree Go2W. Training and deployment tasks
+target Go2W; imported Bodydemo03 robot assets are also available.
 
 [中文说明](README_zh.md) · [Installation](doc/setup_en.md)
+
+See the [Bodydemo03 model guide](src/assets/robots/bodydemo03/README.md) for its
+URDF, meshes and converted MuJoCo XML.
 
 ## Training
 

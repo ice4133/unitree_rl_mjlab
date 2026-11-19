@@ -1,0 +1,124 @@
+<mujoco model="scene_bodydemo03">
+  <include file="bodydemo03.xml" />
+  <option timestep="0.002" integrator="implicitfast" cone="elliptic" />
+
+  <!-- Robot-ground contacts; visual geoms retain their explicit zero masks. -->
+  <default>
+    <geom contype="1" conaffinity="0" group="3" />
+    <joint damping="0.2" armature="0.01" />
+    <!-- Generic joint-side simulation values; replace with measured motor data.
+         Leg controls are target angles (rad), wheel controls are speeds (rad/s).
+         Zero controls hold the CAD standing pose and stop the wheels. -->
+    <default class="bodydemo03_leg_servo">
+      <position kp="400" kv="12" forcelimited="true" forcerange="-50 50" />
+    </default>
+    <default class="bodydemo03_wheel_servo">
+      <velocity kv="2" forcelimited="true" forcerange="-8 8" />
+    </default>
+  </default>
+
+  <!-- Actuator order: FL, FR, RL, RR; hip/thigh/calf/wheel within each leg. -->
+  <actuator>
+    <position name="fl_hip" joint="fl_hip_joint" class="bodydemo03_leg_servo" />
+    <position name="fl_thigh" joint="fl_thigh_joint" class="bodydemo03_leg_servo" />
+    <position name="fl_calf" joint="fl_calf_joint" class="bodydemo03_leg_servo" />
+    <velocity name="fl_wheel" joint="fl_foot_joint" class="bodydemo03_wheel_servo" />
+    <position name="fr_hip" joint="fr_hip_joint" class="bodydemo03_leg_servo" />
+    <position name="fr_thigh" joint="fr_thigh_joint" class="bodydemo03_leg_servo" />
+    <position name="fr_calf" joint="fr_calf_joint" class="bodydemo03_leg_servo" />
+    <velocity name="fr_wheel" joint="fr_foot_joint" class="bodydemo03_wheel_servo" />
+    <position name="rl_hip" joint="rl_hip_joint" class="bodydemo03_leg_servo" />
+    <position name="rl_thigh" joint="rl_thigh_joint" class="bodydemo03_leg_servo" />
+    <position name="rl_calf" joint="rl_calf_joint" class="bodydemo03_leg_servo" />
+    <velocity name="rl_wheel" joint="rl_foot_joint" class="bodydemo03_wheel_servo" />
+    <position name="rr_hip" joint="rr_hip_joint" class="bodydemo03_leg_servo" />
+    <position name="rr_thigh" joint="rr_thigh_joint" class="bodydemo03_leg_servo" />
+    <position name="rr_calf" joint="rr_calf_joint" class="bodydemo03_leg_servo" />
+    <velocity name="rr_wheel" joint="rr_foot_joint" class="bodydemo03_wheel_servo" />
+  </actuator>
+
+  <!-- The existing simulate bridge reads contiguous position, velocity and
+       torque blocks. Each block follows the actuator order above. -->
+  <sensor>
+    <jointpos name="fl_hip_pos" joint="fl_hip_joint" />
+    <jointpos name="fl_thigh_pos" joint="fl_thigh_joint" />
+    <jointpos name="fl_calf_pos" joint="fl_calf_joint" />
+    <jointpos name="fl_wheel_pos" joint="fl_foot_joint" />
+    <jointpos name="fr_hip_pos" joint="fr_hip_joint" />
+    <jointpos name="fr_thigh_pos" joint="fr_thigh_joint" />
+    <jointpos name="fr_calf_pos" joint="fr_calf_joint" />
+    <jointpos name="fr_wheel_pos" joint="fr_foot_joint" />
+    <jointpos name="rl_hip_pos" joint="rl_hip_joint" />
+    <jointpos name="rl_thigh_pos" joint="rl_thigh_joint" />
+    <jointpos name="rl_calf_pos" joint="rl_calf_joint" />
+    <jointpos name="rl_wheel_pos" joint="rl_foot_joint" />
+    <jointpos name="rr_hip_pos" joint="rr_hip_joint" />
+    <jointpos name="rr_thigh_pos" joint="rr_thigh_joint" />
+    <jointpos name="rr_calf_pos" joint="rr_calf_joint" />
+    <jointpos name="rr_wheel_pos" joint="rr_foot_joint" />
+
+    <jointvel name="fl_hip_vel" joint="fl_hip_joint" />
+    <jointvel name="fl_thigh_vel" joint="fl_thigh_joint" />
+    <jointvel name="fl_calf_vel" joint="fl_calf_joint" />
+    <jointvel name="fl_wheel_vel" joint="fl_foot_joint" />
+    <jointvel name="fr_hip_vel" joint="fr_hip_joint" />
+    <jointvel name="fr_thigh_vel" joint="fr_thigh_joint" />
+    <jointvel name="fr_calf_vel" joint="fr_calf_joint" />
+    <jointvel name="fr_wheel_vel" joint="fr_foot_joint" />
+    <jointvel name="rl_hip_vel" joint="rl_hip_joint" />
+    <jointvel name="rl_thigh_vel" joint="rl_thigh_joint" />
+    <jointvel name="rl_calf_vel" joint="rl_calf_joint" />
+    <jointvel name="rl_wheel_vel" joint="rl_foot_joint" />
+    <jointvel name="rr_hip_vel" joint="rr_hip_joint" />
+    <jointvel name="rr_thigh_vel" joint="rr_thigh_joint" />
+    <jointvel name="rr_calf_vel" joint="rr_calf_joint" />
+    <jointvel name="rr_wheel_vel" joint="rr_foot_joint" />
+
+    <jointactuatorfrc name="fl_hip_torque" joint="fl_hip_joint" />
+    <jointactuatorfrc name="fl_thigh_torque" joint="fl_thigh_joint" />
+    <jointactuatorfrc name="fl_calf_torque" joint="fl_calf_joint" />
+    <jointactuatorfrc name="fl_wheel_torque" joint="fl_foot_joint" />
+    <jointactuatorfrc name="fr_hip_torque" joint="fr_hip_joint" />
+    <jointactuatorfrc name="fr_thigh_torque" joint="fr_thigh_joint" />
+    <jointactuatorfrc name="fr_calf_torque" joint="fr_calf_joint" />
+    <jointactuatorfrc name="fr_wheel_torque" joint="fr_foot_joint" />
+    <jointactuatorfrc name="rl_hip_torque" joint="rl_hip_joint" />
+    <jointactuatorfrc name="rl_thigh_torque" joint="rl_thigh_joint" />
+    <jointactuatorfrc name="rl_calf_torque" joint="rl_calf_joint" />
+    <jointactuatorfrc name="rl_wheel_torque" joint="rl_foot_joint" />
+    <jointactuatorfrc name="rr_hip_torque" joint="rr_hip_joint" />
+    <jointactuatorfrc name="rr_thigh_torque" joint="rr_thigh_joint" />
+    <jointactuatorfrc name="rr_calf_torque" joint="rr_calf_joint" />
+    <jointactuatorfrc name="rr_wheel_torque" joint="rr_foot_joint" />
+  </sensor>
+
+  <keyframe>
+    <!-- FL, FR, RL, RR: hip/thigh/calf/wheel. Right thigh/calf axes are
+         reversed. All joint angles are zero in the CAD standing pose.
+         Match the default free-base height so ordinary model loading and
+         an explicit home reset both start with the wheels above the floor. -->
+    <key name="home"
+         qpos="0 0 0.34 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+         ctrl="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" />
+  </keyframe>
+
+  <statistic center="0 0 0.22" extent="0.9" />
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0.3 0.3 0.3" />
+    <global azimuth="135" elevation="-20" />
+  </visual>
+  <asset>
+    <texture type="skybox" builtin="flat" rgb1="0 0 0" rgb2="0 0 0"
+             width="512" height="3072" />
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge"
+             rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.8 0.8 0.8"
+             width="300" height="300" />
+    <material name="groundplane" texture="groundplane" texuniform="true"
+              texrepeat="5 5" reflectance="0.2" />
+  </asset>
+  <worldbody>
+    <light pos="1 0 3.5" dir="0 0 -1" directional="true" />
+    <geom name="floor" type="plane" size="0 0 0.05" material="groundplane"
+          contype="0" conaffinity="1" group="0" friction="0.8 0.005 0.0001" />
+  </worldbody>
+</mujoco>

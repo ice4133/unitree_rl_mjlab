@@ -2,9 +2,12 @@
 
 本工程基于 [mjlab](https://github.com/mujocolab/mjlab) 和 MuJoCo，
 用于 Unitree Go2W 的速度策略训练、回放和部署。
-当前仓库只保留 Go2W 的机器人资产、任务配置和机器人专属部署代码。
+当前训练和部署任务面向 Go2W，同时包含实验室 Bodydemo03 的机器人模型资产。
 
 [English](README.md) · [安装配置](doc/setup_zh.md)
+
+自研机器人的 URDF 和网格可按 [URDF 转 MJCF](doc/urdf_to_mjcf_zh.md) 转换为 MuJoCo XML。
+已导入的 [Bodydemo03 模型](src/assets/robots/bodydemo03/README.md) 包含 URDF、网格及转换后的 XML。
 
 ## 🛠️ 使用指南
 

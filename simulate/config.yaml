@@ -1,5 +1,5 @@
-robot: "go2w"
-robot_scene: "src/assets/robots/unitree_go2w/xmls/scene_go2w.xml"
+robot: "bodydemo03"
+robot_scene: "src/assets/robots/bodydemo03/xmls/scene_bodydemo03.xml"
 
 domain_id: 0  # Unitree SDK2 motor channels; ROS sensors use a separate domain 10.
 interface: "lo" # Interface
