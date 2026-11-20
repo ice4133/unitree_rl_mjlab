@@ -1,0 +1,3 @@
+# Flat policy deployment only needs the IMU in rt/lowstate.
+# Keep this separate from Go2W's camera/lidar/navigation configuration.
+enabled: false

@@ -2,7 +2,7 @@
 
 本工程基于 [mjlab](https://github.com/mujocolab/mjlab) 和 MuJoCo，
 用于 Unitree Go2W 的速度策略训练、回放和部署。
-当前训练和部署任务面向 Go2W，同时包含实验室 Bodydemo03 的机器人模型资产。
+提供 Go2W 训练与部署配置，以及实验室 Bodydemo03 的模型、velocity 训练模板和 Flat 部署。
 
 [English](README.md) · [安装配置](doc/setup_zh.md)
 
@@ -24,7 +24,7 @@ python scripts/train.py Unitree-Go2W-Flat --env.scene.num-envs=1024
 python scripts/train.py Unitree-Go2W-Rough --env.scene.num-envs=512
 ```
 
-本项目的任务为 `Unitree-Go2W-Flat` 和 `Unitree-Go2W-Rough`。
+Go2W 的任务为 `Unitree-Go2W-Flat` 和 `Unitree-Go2W-Rough`。
 显存不足时降低环境数；多 GPU 训练可添加 `--gpu-ids 0 1`。
 安装的 mjlab 库还可能注册自身的任务，它们与本仓库的 Go2W 配置相互独立。
 
@@ -32,6 +32,13 @@ python scripts/train.py Unitree-Go2W-Rough --env.scene.num-envs=512
 `logs/rsl_rl/go2w_velocity_rough/<时间>/`（Rough），包含 checkpoint 和 ONNX。
 奖励、观测、动作顺序和导出约定见
 [Go2W 任务说明](src/tasks/velocity/config/go2w/README.md)。
+
+Bodydemo03 提供 `Bodydemo03-Flat`、`Bodydemo03-Rough` 模板，使用方法和
+待调整参数见 [Bodydemo03 说明](src/assets/robots/bodydemo03/README.md#velocity-训练与回放模板)：
+
+```bash
+python scripts/train.py Bodydemo03-Flat --env.scene.num-envs=512
+```
 
 ### 2. 策略回放
 
@@ -63,11 +70,13 @@ cmake --build deploy/robots/go2w/build -j2
 在两个终端分别启动仿真器和控制器：
 
 ```bash
-./simulate/build/unitree_mujoco
+./simulate/build/unitree_mujoco --robot go2w \
+  --scene src/assets/robots/unitree_go2w/xmls/scene_go2w.xml
 ./deploy/robots/go2w/build/go2w_ctrl --network=lo
 ```
 
-`simulate/config.yaml` 已选择 Go2W 场景。
+`simulate/config.yaml` 当前默认选择 Bodydemo03 部署场景，上面的命令显式加载 Go2W。
+Go2W 建图／导航还需将 `ros2_sensors_config` 设为 `ros2_sensors/config/sensors.yaml`。
 手动／自动速度来源在 `deploy/robots/go2w/config/config.yaml` 中设置。
 状态切换、ROS 指令、电机顺序和不启用 ROS 的构建方式见
 [部署说明](deploy/robots/go2w/README.md)。
@@ -82,6 +91,20 @@ cp logs/rsl_rl/go2w_velocity/<时间>/policy.onnx \
 当前 C++ 部署配置对应 Flat 的 55 维观测和 16 维动作。
 Rough 使用 242 维观测，部署端提供相同定义的高度扫描后才能替换。
 实机部署前先完成仿真验证，并按机器人部署流程将 `lo` 改为实机网卡。
+
+Bodydemo03 沿用 Go2W 的部署结构、DDS 槽位和状态机，使用自身的零位站姿、
+PD 参数及力矩场景：
+
+```bash
+cmake -S deploy/robots/bodydemo03 -B deploy/robots/bodydemo03/build
+cmake --build deploy/robots/bodydemo03/build -j2
+./simulate/build/unitree_mujoco
+./deploy/robots/bodydemo03/build/bodydemo03_ctrl --network=lo
+```
+
+最后两条命令在不同终端运行。默认键盘控制，`1` 站立，等待 2 秒后按 `2`
+进入策略，`0` 阻尼。权重安装、测试、ROS 输入及与 Go2W 的差异见
+[Bodydemo03 部署说明](deploy/robots/bodydemo03/README.md)。
 
 ### 4. 建图与导航
 

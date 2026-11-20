@@ -16,7 +16,9 @@ Linux 构建会将 Unitree SDK2 的动态库路径写入可执行文件的 RPATH
 即使当前终端已加载 ROS 环境，也无需手动设置 `LD_LIBRARY_PATH`。
 
 控制器需收到 `rt/lowstate` 后才会继续启动。仿真器使用根目录的
-`simulate/config.yaml`，目前已选择 `scene_go2w.xml`。
+`simulate/config.yaml`。当前默认场景为 Bodydemo03，运行 Go2W 时使用
+`./simulate/build/unitree_mujoco --robot go2w --scene src/assets/robots/unitree_go2w/xmls/scene_go2w.xml`，
+建图／导航同时将 `ros2_sensors_config` 设为 `ros2_sensors/config/sensors.yaml`。
 
 键盘 `1` 进入站立，`2` 进入策略，`0` 进入阻尼；W/S 控制前后，Q/E 控制转向。
 当前平地滚动任务的横向速度固定为 0，A/D 不产生横移命令。

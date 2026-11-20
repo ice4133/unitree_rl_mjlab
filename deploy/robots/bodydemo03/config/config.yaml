@@ -1,0 +1,41 @@
+control:
+  # Restart bodydemo03_ctrl after changing the mode.
+  # joystick/keyboard: manual velocity and state input.
+  # auto: ROS velocity; gamepad state buttons and terminal state keys remain available.
+  mode: keyboard # joystick | keyboard | auto
+  ros:
+    topic: /cmd_vel # geometry_msgs/msg/Twist: body-frame vx/vy [m/s], wz [rad/s].
+    domain_id: 10 # Independent of Unitree SDK2 domain 0 and shell ROS_DOMAIN_ID.
+    timeout: 0.5 # No input / invalid input / timeout => zero target velocity.
+
+FSM:
+  _:
+    Passive:
+      id: 1
+    FixStand:
+      id: 2
+    Velocity:
+      id: 3
+      type: RLBase
+  Passive:
+    transitions:
+      # Accept either press order; LT smoothing can delay the trigger edge.
+      FixStand: (LT + up.on_pressed) | (LT.on_pressed + up)
+    # All motor arrays here use SDK order: FR, FL, RR, RL legs, then wheels.
+    # The Go2 DDS packet has 20 slots; the last four slots are unused.
+    mode: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]
+    kd: [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2]
+  FixStand:
+    transitions:
+      Passive: (LT + B.on_pressed) | (LT.on_pressed + B)
+      Velocity: (RT + A.on_pressed) | (RT.on_pressed + A)
+    kp: [400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 400, 0, 0, 0, 0]
+    kd: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 2, 2, 2, 2]
+    ts: [0, 2]
+    qs:
+      - [] # Filled from current command positions by the common FixStand state.
+      - [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  Velocity:
+    transitions:
+      Passive: (LT + B.on_pressed) | (LT.on_pressed + B)
+    policy_dir: config/policy/velocity/v0

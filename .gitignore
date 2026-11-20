@@ -5,7 +5,10 @@ logs
 wandb
 MUJOCO_LOG.TXT
 deploy/robots/go2w/build
+deploy/robots/bodydemo03/build
+deploy/robots/bodydemo03/config/policy/velocity/v0/exported/*.onnx
 simulate/build
 .vscode
 __pycache__
 unitree_rl_mjlab.code-workspace
+.cache

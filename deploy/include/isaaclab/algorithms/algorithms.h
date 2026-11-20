@@ -78,6 +78,11 @@ public:
         {
             const std::string name_str(input_names[i]);
             auto& input_data = obs.at(name_str);
+            if (input_data.size() != static_cast<size_t>(input_sizes[i])) {
+                throw std::runtime_error("Observation size does not match ONNX input '" + name_str +
+                                         "': expected " + std::to_string(input_sizes[i]) +
+                                         ", got " + std::to_string(input_data.size()));
+            }
             auto input_tensor = Ort::Value::CreateTensor<float>(memory_info, input_data.data(), input_sizes[i], input_shapes[i].data(), input_shapes[i].size());
             input_tensors.push_back(std::move(input_tensor));
         }

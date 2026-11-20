@@ -3,4 +3,5 @@
 from .bodydemo03_constants import (
   get_bodydemo03_robot_cfg as get_bodydemo03_robot_cfg,
   get_bodydemo03_spec as get_bodydemo03_spec,
+  get_bodydemo03_velocity_robot_cfg as get_bodydemo03_velocity_robot_cfg,
 )
