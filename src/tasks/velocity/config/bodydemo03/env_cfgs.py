@@ -256,12 +256,11 @@ def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     group.terms.pop("height_scan", None)
   cfg.curriculum = {}
 
-  # Flat must learn to stand under a zero command while remaining entirely
-  # policy-controlled. More stationary samples expose this objective regularly.
-  cfg.commands["twist"].rel_standing_envs = 0.3
+  # Match the Go2W baseline; keep the optional standing terms disabled.
+  cfg.commands["twist"].rel_standing_envs = 0.1
   cfg.rewards["stand_wheel_motion"] = RewardTermCfg(
     func=bodydemo03_rewards.standing_wheel_motion_l2,
-    weight=-0.02,
+    weight=0.0,
     params={
       "asset_cfg": SceneEntityCfg("robot", joint_names=WHEEL_JOINTS),
       "command_name": "twist",
@@ -271,7 +270,7 @@ def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
   cfg.rewards["stand_wheel_support"] = RewardTermCfg(
     func=bodydemo03_rewards.standing_support_deficit,
-    weight=-1.0,
+    weight=0.0,
     params={
       "sensor_name": "feet_ground_contact",
       "command_name": "twist",
@@ -281,7 +280,7 @@ def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
   cfg.rewards["stand_base_motion"] = RewardTermCfg(
     func=bodydemo03_rewards.standing_base_motion_l2,
-    weight=-0.5,
+    weight=0.0,
     params={
       "asset_cfg": SceneEntityCfg("robot"),
       "command_name": "twist",
@@ -292,7 +291,7 @@ def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
   cfg.rewards["stand_wheel_height"] = RewardTermCfg(
     func=bodydemo03_rewards.standing_wheel_height_spread,
-    weight=-0.5,
+    weight=0.0,
     params={
       "asset_cfg": SceneEntityCfg("robot", site_names=WHEEL_SITES),
       "command_name": "twist",

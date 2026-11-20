@@ -84,9 +84,14 @@ class StandingObjectiveTest(unittest.TestCase):
     go2w = unitree_go2w_flat_env_cfg()
     for name in ("stand_wheel_motion", "stand_wheel_support", "stand_base_motion", "stand_wheel_height"):
       self.assertIn(name, flat.rewards)
+      self.assertEqual(flat.rewards[name].weight, 0.0)
       self.assertNotIn(name, rough.rewards)
       self.assertNotIn(name, go2w.rewards)
-    self.assertEqual(flat.commands["twist"].rel_standing_envs, 0.3)
+    self.assertEqual(
+      {name: term.weight for name, term in flat.rewards.items() if term.weight != 0.0},
+      {name: term.weight for name, term in go2w.rewards.items() if term.weight != 0.0},
+    )
+    self.assertEqual(flat.commands["twist"].rel_standing_envs, 0.1)
     self.assertEqual(rough.commands["twist"].rel_standing_envs, 0.1)
     self.assertEqual(go2w.commands["twist"].rel_standing_envs, 0.1)
     self.assertEqual(tuple(flat.actions), ("joint_pos", "joint_vel"))
