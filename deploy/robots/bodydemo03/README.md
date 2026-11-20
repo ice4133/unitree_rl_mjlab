@@ -26,6 +26,9 @@ cmake --build simulate/build -j2
 
 首次配置 `simulate/build` 时使用 `cmake -S simulate -B simulate/build`。
 部署控制器需收到仿真器的 `rt/lowstate` 后才会继续初始化。
+Go2W 和 Bodydemo03 控制器共用 domain 0 的 `rt/lowcmd`，启动前请先在旧控制器
+终端按 `Ctrl+C`，确保只运行一个控制器。Bodydemo03 启动时若检测到已有命令发布，
+会报错并退出；它不会自动结束本机的 `go2w_ctrl` 或其他控制器进程。
 默认 `control.mode: keyboard`，键盘 `1` 进入 `FixStand`，等待 2 秒完成站立，
 再按 `2` 进入 `Velocity`；`0` 返回阻尼。W/S 前后，Q/E 转向，横向速度固定为零。
 
