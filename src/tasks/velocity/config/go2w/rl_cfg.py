@@ -1,4 +1,4 @@
-"""PPO configuration for the Go2W flat velocity baseline."""
+"""PPO configuration for unified Go2W rolling and stepping velocity tasks."""
 
 from mjlab.rl import (
   RslRlModelCfg,

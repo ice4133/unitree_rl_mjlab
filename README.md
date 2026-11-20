@@ -21,6 +21,9 @@ python scripts/train.py Unitree-Go2W-Rough --env.scene.num-envs=512
 ```
 
 The Go2W tasks are `Unitree-Go2W-Flat` and `Unitree-Go2W-Rough`.
+Both train one velocity-conditioned policy for forward/backward rolling,
+left/right sidestepping, diagonal motion and turning. A lateral command
+curriculum expands from ±0.25 to ±0.5 m/s; new skills require retraining.
 Reduce the environment count if GPU memory is limited. Multi-GPU training uses
 `--gpu-ids 0 1`. The installed mjlab package may also register its own tasks;
 those are separate from this repository's Go2W configurations.

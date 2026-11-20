@@ -7,17 +7,26 @@ Reward functions retain this project's definitions, so weights are starting valu
 
 from copy import deepcopy
 
-from mjlab.envs import ManagerBasedRlEnvCfg
-from mjlab.envs import mdp
+from mjlab.envs import ManagerBasedRlEnvCfg, mdp
 from mjlab.envs.mdp.actions import JointPositionActionCfg, JointVelocityActionCfg
-from mjlab.managers import EventTermCfg, RewardTermCfg, SceneEntityCfg, TerminationTermCfg
+from mjlab.managers import (
+  CurriculumTermCfg,
+  EventTermCfg,
+  RewardTermCfg,
+  SceneEntityCfg,
+  TerminationTermCfg,
+)
 from mjlab.managers.metrics_manager import MetricsTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg, RayCastSensorCfg
 from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 
 from src.assets.robots.unitree_go2w.go2w_constants import get_go2w_robot_cfg
+from src.tasks.velocity import mdp as task_mdp
 from src.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
+
+from . import mdp as go2w_mdp
+from .commands import Go2WVelocityCommandCfg
 
 LEG_JOINTS = (r".*_(hip|thigh|calf)_joint",)
 WHEEL_JOINTS = (r".*_wheel_joint",)
@@ -69,7 +78,9 @@ def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.viewer.body_name = "base_link"
   cfg.viewer.distance = 1.5
   cfg.viewer.elevation = -10.0
-  cfg.observations["critic"].terms["foot_height"].params["asset_cfg"].site_names = site_names
+  cfg.observations["critic"].terms["foot_height"].params[
+    "asset_cfg"
+  ].site_names = site_names
   cfg.events["foot_friction"].params["asset_cfg"].geom_names = geom_names
   cfg.events["base_com"].params["asset_cfg"].body_names = ("base_link",)
 
@@ -121,19 +132,33 @@ def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     )
     group.terms["joint_vel"].scale = 0.05
 
-  command = cfg.commands["twist"]
-  assert isinstance(command, UniformVelocityCommandCfg)
-  command.heading_command = False
-  command.ranges.heading = None
-  command.rel_standing_envs = 0.1
-  command.ranges.lin_vel_x = (-0.5, 1.0)
-  command.ranges.lin_vel_y = (0.0, 0.0)
-  command.ranges.ang_vel_z = (-1.0, 1.0)
-  # Keep command ranges compatible with the non-steering wheels. Rough uses
-  # terrain progression, without the shared template's lateral-speed curriculum.
-  cfg.curriculum.pop("command_vel", None)
+  cfg.commands["twist"] = Go2WVelocityCommandCfg(
+    entity_name="robot",
+    resampling_time_range=(3.0, 8.0),
+    rel_standing_envs=0.1,
+    heading_command=False,
+    debug_vis=True,
+    ranges=UniformVelocityCommandCfg.Ranges(
+      lin_vel_x=(-0.5, 1.0),
+      lin_vel_y=(-0.5, 0.5) if play else (-0.25, 0.25),
+      ang_vel_z=(-1.0, 1.0),
+    ),
+  )
+  # Keep nonzero lateral commands from the start, then expand their range.
+  # Steps count control steps per environment, independent of parallel env count.
+  cfg.curriculum["command_vel"] = CurriculumTermCfg(
+    func=task_mdp.commands_vel,
+    params={
+      "command_name": "twist",
+      "velocity_stages": [
+        {"step": 0, "lin_vel_y": (-0.25, 0.25)},
+        {"step": 1000 * 24, "lin_vel_y": (-0.35, 0.35)},
+        {"step": 3000 * 24, "lin_vel_y": (-0.5, 0.5)},
+      ],
+    },
+  )
 
-  # These foot rewards assume stationary stance feet and/or a walking gait.
+  # Replace Go2 foot shaping with command-gated stepping and wheel-aware slip.
   for name in ("foot_gait", "foot_clearance", "foot_slip", "soft_landing"):
     cfg.rewards.pop(name, None)
   # Wheel rotation naturally contributes angular momentum.
@@ -162,15 +187,82 @@ def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={"asset_cfg": SceneEntityCfg("robot", actuator_names=LEG_JOINTS)},
   )
 
+  # Lateral motion requires stepping and hip excursions. Do not reward holding
+  # the narrow rolling pose or suppress the vertical movement needed to step.
+  cfg.rewards["track_linear_velocity"].params["z_vel_weight"] = 0.0
+  cfg.rewards["pose"].weight = 0.5
+  for name in ("std_walking", "std_running"):
+    cfg.rewards["pose"].params[name] = {
+      r".*(FR|FL|RR|RL)_hip_joint.*": 0.3,
+      r".*(FR|FL|RR|RL)_thigh_joint.*": 0.5,
+      r".*(FR|FL|RR|RL)_calf_joint.*": 0.75,
+    }
+  cfg.rewards["lateral_gait"] = RewardTermCfg(
+    func=go2w_mdp.lateral_gait,
+    weight=0.5,
+    params={
+      "command_name": "twist",
+      "sensor_name": feet_ground_cfg.name,
+      "period": 0.6,
+      "offset": [0.0, 0.5, 0.5, 0.0],
+      "threshold": 0.6,
+    },
+  )
+  cfg.rewards["lateral_air_time"] = RewardTermCfg(
+    func=go2w_mdp.lateral_air_time,
+    weight=1.0,
+    params={
+      "command_name": "twist",
+      "sensor_name": feet_ground_cfg.name,
+      "threshold": 0.2,
+    },
+  )
+  cfg.rewards["track_lateral_velocity"] = RewardTermCfg(
+    func=go2w_mdp.track_lateral_velocity,
+    weight=1.5,
+    params={"command_name": "twist", "std": 0.25},
+  )
+  cfg.rewards["wheel_lateral_slip"] = RewardTermCfg(
+    func=go2w_mdp.wheel_lateral_slip,
+    weight=-0.5,
+    params={
+      "sensor_name": feet_ground_cfg.name,
+      "asset_cfg": SceneEntityCfg(
+        "robot",
+        site_names=site_names,
+        body_names=tuple(f"{name}_wheel_link" for name in site_names),
+        # Use entity/XML order, as ContactSensor does when resolving primaries.
+      ),
+    },
+  )
+  cfg.rewards["soft_landing"] = RewardTermCfg(
+    func=task_mdp.soft_landing,
+    weight=-1e-3,
+    params={"sensor_name": feet_ground_cfg.name, "command_name": "twist"},
+  )
+  cfg.metrics["lateral_velocity_error"] = MetricsTermCfg(
+    func=go2w_mdp.lateral_velocity_error,
+    params={"command_name": "twist"},
+  )
+  for name, joints in (("leg", LEG_JOINTS), ("wheel", WHEEL_JOINTS)):
+    cfg.metrics[f"{name}_joint_vel_l2"] = MetricsTermCfg(
+      func=mdp.joint_vel_l2,
+      params={"asset_cfg": SceneEntityCfg("robot", joint_names=joints)},
+    )
+
   # Moderate randomization shared by the flat and rough baselines.
   cfg.events["foot_friction"].params["ranges"] = (0.5, 1.2)
   cfg.events["base_com"].params["ranges"] = {
-    0: (-0.02, 0.02), 1: (-0.02, 0.02), 2: (-0.02, 0.02)
+    0: (-0.02, 0.02),
+    1: (-0.02, 0.02),
+    2: (-0.02, 0.02),
   }
   if "push_robot" in cfg.events:
     cfg.events["push_robot"].interval_range_s = (8.0, 12.0)
     cfg.events["push_robot"].params["velocity_range"] = {
-      "x": (-0.3, 0.3), "y": (-0.2, 0.2), "yaw": (-0.4, 0.4)
+      "x": (-0.3, 0.3),
+      "y": (-0.2, 0.2),
+      "yaw": (-0.4, 0.4),
     }
 
   if play:
@@ -188,7 +280,7 @@ def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
 
 def unitree_go2w_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Train terrain-aware rolling and stepping without prescribing a foot gait."""
+  """Train terrain-aware rolling and command-conditioned sidestepping."""
   cfg = _make_go2w_env_cfg(play=play)
   cfg.sim.mujoco.ccd_iterations = 500
   cfg.sim.contact_sensor_maxmatch = 500
@@ -204,25 +296,7 @@ def unitree_go2w_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   generator.curriculum = not play
   cfg.scene.terrain.max_init_terrain_level = 1
 
-  # Climbing requires vertical base motion and larger leg excursions. Keep the
-  # shared reward's original defaults for Flat and the other robots.
-  cfg.rewards["track_linear_velocity"].params["z_vel_weight"] = 0.0
-  cfg.rewards["pose"].weight = 0.5
-  for name in ("std_walking", "std_running"):
-    cfg.rewards["pose"].params[name] = {
-      r".*(FR|FL|RR|RL)_hip_joint.*": 0.2,
-      r".*(FR|FL|RR|RL)_thigh_joint.*": 0.5,
-      r".*(FR|FL|RR|RL)_calf_joint.*": 0.75,
-    }
   cfg.rewards["stand_still"].weight = -0.5
-
-  # Monitor leg and wheel motion separately alongside velocity error, terrain
-  # level and terminations. These diagnostics do not reward unnecessary steps.
-  for name, joints in (("leg", LEG_JOINTS), ("wheel", WHEEL_JOINTS)):
-    cfg.metrics[f"{name}_joint_vel_l2"] = MetricsTermCfg(
-      func=mdp.joint_vel_l2,
-      params={"asset_cfg": SceneEntityCfg("robot", joint_names=joints)},
-    )
 
   if play:
     generator.num_cols = 5
@@ -233,7 +307,7 @@ def unitree_go2w_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
 
 def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create the original flat rolling baseline with its 55-value actor input."""
+  """Create the unified flat velocity task with its 55-value actor input."""
   cfg = _make_go2w_env_cfg(play=play)
   cfg.sim.njmax = 300
   cfg.sim.mujoco.ccd_iterations = 50
@@ -248,6 +322,6 @@ def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
   for group in cfg.observations.values():
     group.terms.pop("height_scan", None)
-  cfg.curriculum = {}
+  cfg.curriculum.pop("terrain_levels", None)
 
   return cfg

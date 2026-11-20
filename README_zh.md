@@ -25,6 +25,8 @@ python scripts/train.py Unitree-Go2W-Rough --env.scene.num-envs=512
 ```
 
 Go2W 的任务为 `Unitree-Go2W-Flat` 和 `Unitree-Go2W-Rough`。
+两者均训练统一的腿轮速度策略，包含前后滚动、左右迈步横移、斜向移动和转向；
+横向指令课程从 ±0.25 逐步扩到 ±0.5 m/s，需重新训练权重才能获得新增技能。
 显存不足时降低环境数；多 GPU 训练可添加 `--gpu-ids 0 1`。
 安装的 mjlab 库还可能注册自身的任务，它们与本仓库的 Go2W 配置相互独立。
 
@@ -89,6 +91,8 @@ cp logs/rsl_rl/go2w_velocity/<时间>/policy.onnx \
 ```
 
 当前 C++ 部署配置对应 Flat 的 55 维观测和 16 维动作。
+部署文件的横向限幅仍匹配原有滚动权重；替换并验证新 Flat 权重后，按
+[Go2W 任务说明](src/tasks/velocity/config/go2w/README.md#与-c-部署对齐)将横向范围改为 `[-0.5, 0.5]`。
 Rough 使用 242 维观测，部署端提供相同定义的高度扫描后才能替换。
 实机部署前先完成仿真验证，并按机器人部署流程将 `lo` 改为实机网卡。
 
