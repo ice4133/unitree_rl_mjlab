@@ -23,8 +23,6 @@ from src.assets.robots.bodydemo03.bodydemo03_constants import (
 )
 from src.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
 
-from . import rewards as bodydemo03_rewards
-
 LEG_JOINTS = BODYDEMO03_LEG_JOINTS
 WHEEL_JOINTS = BODYDEMO03_WHEEL_JOINTS
 
@@ -255,67 +253,5 @@ def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   for group in cfg.observations.values():
     group.terms.pop("height_scan", None)
   cfg.curriculum = {}
-
-  # Match the Go2W baseline; keep the optional standing terms disabled.
-  cfg.commands["twist"].rel_standing_envs = 0.1
-  cfg.rewards["stand_wheel_motion"] = RewardTermCfg(
-    func=bodydemo03_rewards.standing_wheel_motion_l2,
-    weight=0.0,
-    params={
-      "asset_cfg": SceneEntityCfg("robot", joint_names=WHEEL_JOINTS),
-      "command_name": "twist",
-      "command_threshold": 0.1,
-      "target_weight": 0.25,
-    },
-  )
-  cfg.rewards["stand_wheel_support"] = RewardTermCfg(
-    func=bodydemo03_rewards.standing_support_deficit,
-    weight=0.0,
-    params={
-      "sensor_name": "feet_ground_contact",
-      "command_name": "twist",
-      "command_threshold": 0.1,
-      "min_normal_force": 5.0,
-    },
-  )
-  cfg.rewards["stand_base_motion"] = RewardTermCfg(
-    func=bodydemo03_rewards.standing_base_motion_l2,
-    weight=0.0,
-    params={
-      "asset_cfg": SceneEntityCfg("robot"),
-      "command_name": "twist",
-      "command_threshold": 0.1,
-      "linear_scale": 0.05,
-      "angular_scale": 0.1,
-    },
-  )
-  cfg.rewards["stand_wheel_height"] = RewardTermCfg(
-    func=bodydemo03_rewards.standing_wheel_height_spread,
-    weight=0.0,
-    params={
-      "asset_cfg": SceneEntityCfg("robot", site_names=WHEEL_SITES),
-      "command_name": "twist",
-      "command_threshold": 0.1,
-      "height_scale": 0.02,
-      "height_tolerance": 0.001,
-    },
-  )
-  for name, func in (
-    ("wheel_support_fraction", bodydemo03_rewards.wheel_support_fraction),
-    ("all_wheels_supported", bodydemo03_rewards.all_wheels_supported),
-  ):
-    cfg.metrics[name] = MetricsTermCfg(
-      func=func,
-      params={"sensor_name": "feet_ground_contact", "min_normal_force": 5.0},
-    )
-  cfg.metrics["standing_wheel_velocity_l2"] = MetricsTermCfg(
-    func=bodydemo03_rewards.standing_wheel_motion_l2,
-    params={
-      "asset_cfg": SceneEntityCfg("robot", joint_names=WHEEL_JOINTS),
-      "command_name": "twist",
-      "command_threshold": 0.1,
-      "target_weight": 0.0,
-    },
-  )
 
   return cfg

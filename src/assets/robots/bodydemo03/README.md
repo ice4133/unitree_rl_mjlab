@@ -122,29 +122,14 @@ python scripts/play.py Bodydemo03-Flat \
 - 策略频率 50 Hz：物理步长 0.005 s，decimation=4。
 - Flat Actor 输入为 55 维；Rough 追加 187 维地形扫描，合计 242 维。
   累计轮转角不进入观测，全部关节速度进入观测。
-- 速度范围、基础奖励、PPO 网络及随机化沿用 Go2W 起点；Flat 的额外静止奖励默认关闭。
+- 速度范围、基础奖励、PPO 网络及随机化沿用 Go2W 起点。
 
-### Flat 零命令站立诊断与可选奖励
+### 基础奖励与继续训练
 
-Flat 保留以下四个静止惩罚项的参数定义，当前权重均为 0，默认关闭，
-使用与 Go2W 一致的 12 项非零权重奖励。开启后仅在速度命令范数小于 0.1 时生效。
-部署进入 `Velocity` 后持续执行 policy，键盘映射沿用 Go2W。
-
-| 奖励项 | 权重 | 内容 |
-| --- | --- | --- |
-| `stand_wheel_motion` | 0.0 | 轮子实际角速度平方和，加 0.25 倍轮速目标平方和；同时约束空转和顶着地面转不动的非零目标 |
-| `stand_wheel_support` | 0.0 | 每轮竖直接触力不足 5 N 时产生 0～1 的平滑代价，四轮相加；超过阈值不额外奖励大力冲击 |
-| `stand_base_motion` | 0.0 | 平面漂移以 0.05 m/s、转向以 0.1 rad/s 归一化后的平方和；此项没有上限，重新启用前应调整尺度和权重 |
-| `stand_wheel_height` | 0.0 | 四个轮轴相对最低轮轴的高度差，容许 1 mm 误差，以 2 cm 归一化后平方；每轮上限为 1，为降低悬空轮提供连续反馈 |
-
-Flat 的静止命令比例为 10%，与 Go2W 基线一致。以上四项在运动命令下为零，
-Rough 不配置这四项，避免在不平地形上要求静止时四轮同时承重。
-`rl_cfg.py` 的 PPO 超参数和网络结构保持原设置，Actor 仍为 55 维输入、16 维输出。
-
-TensorBoard 新增 `Episode_Metrics/wheel_support_fraction`、
-`Episode_Metrics/all_wheels_supported` 和 `Episode_Metrics/standing_wheel_velocity_l2`。
-前两项分别记录四轮有效承重的比例与四轮同时承重比例；最后一项只在静止命令时
-累计轮速平方和，按全部策略步平均。详细静止评估使用下面的诊断脚本。
+Flat 和 Rough 分别使用对应 Go2W 模板的 12 项基础奖励及权重，
+静止命令比例为 10%。机器人专属的关节名称和模型参数按 Bodydemo03 配置。
+Flat Actor 仍为 55 维输入、16 维输出，`rl_cfg.py` 的 PPO 超参数保持原设置。
+详细接触评估可使用下面的独立诊断脚本。
 
 修改奖励不会改变已有 checkpoint / ONNX 的行为，需要重新训练或继续训练后重新导出。
 从原训练结果继续训练的例子：
@@ -155,7 +140,7 @@ python scripts/train.py Bodydemo03-Flat \
   --agent.resume=True \
   --agent.load-run=<原训练时间目录> \
   --agent.load-checkpoint=model_4999.pt \
-  --agent.run-name=standing_fix \
+  --agent.run-name=continued_training \
   --agent.max-iterations=2000
 ```
 
