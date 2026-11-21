@@ -25,6 +25,7 @@ int main()
             "/bodydemo03_velocity_test", rclcpp::QoS(1));
         geometry_msgs::msg::Twist message;
         message.linear.x = 0.3;
+        message.linear.y = -0.2;
         message.angular.z = -0.4;
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
         bool received = false;
@@ -32,7 +33,8 @@ int main()
             publisher->publish(message);
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             const auto command = receiver.read();
-            if (std::abs(command[0] - 0.3f) < 1e-5 && std::abs(command[2] + 0.4f) < 1e-5) {
+            if (std::abs(command[0] - 0.3f) < 1e-5 && std::abs(command[1] + 0.2f) < 1e-5 &&
+                std::abs(command[2] + 0.4f) < 1e-5) {
                 received = true;
                 break;
             }

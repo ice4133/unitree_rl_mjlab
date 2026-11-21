@@ -6,6 +6,30 @@
 
 namespace bodydemo03
 {
+CommandTransition::CommandTransition(double duration) : duration_(duration)
+{
+    if (!std::isfinite(duration) || duration < 0)
+        throw std::runtime_error("Velocity transition_time must be finite and nonnegative");
+}
+
+void CommandTransition::reset(const unitree_go::msg::dds_::LowCmd_ &command)
+{
+    initial_ = command;
+}
+
+void CommandTransition::apply(unitree_go::msg::dds_::LowCmd_ &command, double elapsed) const
+{
+    const double t = duration_ > 0 ? std::clamp(elapsed / duration_, 0.0, 1.0) : 1.0;
+    const float blend = t * t * (3.0 - 2.0 * t);
+    for (int i = 0; i < kMotorCount; ++i)
+    {
+        auto &motor = command.motor_cmd()[i];
+        const auto &start = initial_.motor_cmd()[i];
+        motor.q() = start.q() + blend * (motor.q() - start.q());
+        motor.dq() = start.dq() + blend * (motor.dq() - start.dq());
+    }
+}
+
 PolicyLayout::PolicyLayout(const YAML::Node &cfg)
 {
     motor_ids = cfg["joint_ids_map"].as<std::vector<int>>();

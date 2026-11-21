@@ -358,6 +358,51 @@ def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     weight=-1e-3,
     params={"sensor_name": "feet_ground_contact", "command_name": "twist"},
   )
+  # The old zero-command policy held FR in the air and spun its wheel at
+  # ~15 rad/s while retaining nearly all velocity-tracking reward. Penalize
+  # missing support directly; wheel acceleration alone cannot stop steady spin.
+  cfg.rewards["wheel_support_deficit"] = RewardTermCfg(
+    func=bodydemo03_mdp.wheel_support_deficit,
+    weight=-3.0,
+    params={
+      "command_name": "twist",
+      "sensor_name": "feet_ground_contact",
+      "min_force": 5.0,
+      "maneuver_threshold": 0.1,
+    },
+  )
+  cfg.rewards["stationary_wheel_velocity"] = RewardTermCfg(
+    func=bodydemo03_mdp.stationary_wheel_velocity_l2,
+    weight=-0.02,
+    params={
+      "command_name": "twist",
+      "command_threshold": 0.1,
+      "asset_cfg": SceneEntityCfg("robot", joint_names=WHEEL_JOINTS),
+    },
+  )
+  cfg.rewards["wheel_air_time_excess"] = RewardTermCfg(
+    func=bodydemo03_mdp.wheel_air_time_excess,
+    weight=-1.0,
+    params={
+      "sensor_name": "feet_ground_contact",
+      "max_air_time": 0.35,
+      "time_scale": 0.2,
+    },
+  )
+  # A normal 0.6 s gait has ~0.24 s swing time. Allow recovery before ending
+  # episodes with a permanently lifted leg, for every command direction.
+  cfg.terminations["wheel_air_time_limit"] = TerminationTermCfg(
+    func=bodydemo03_mdp.wheel_air_time_limit,
+    params={"sensor_name": "feet_ground_contact", "max_air_time": 0.8},
+  )
+  cfg.metrics["wheel_support_fraction"] = MetricsTermCfg(
+    func=bodydemo03_mdp.wheel_support_fraction,
+    params={"sensor_name": "feet_ground_contact", "min_force": 5.0},
+  )
+  cfg.metrics["max_wheel_air_time"] = MetricsTermCfg(
+    func=bodydemo03_mdp.max_wheel_air_time,
+    params={"sensor_name": "feet_ground_contact"},
+  )
   cfg.metrics["lateral_velocity_error"] = MetricsTermCfg(
     func=wheeled_mdp.lateral_velocity_error,
     params={"command_name": "twist"},

@@ -53,6 +53,7 @@ def reward_env(commands):
   contact = SimpleNamespace(
     data=SimpleNamespace(
       found=torch.ones(count, 4),
+      force=torch.tensor([0.0, 0.0, 60.0]).expand(count, 4, 3).clone(),
       current_contact_time=torch.ones(count, 4) * 0.2,
       current_air_time=torch.zeros(count, 4),
     )
@@ -72,12 +73,16 @@ class Bodydemo03BaselineTest(unittest.TestCase):
       with self.subTest(play=play):
         body = bodydemo03_flat_env_cfg(play=play)
         reference = unitree_go2w_flat_env_cfg(play=play)
-        self.assertEqual(len(body.rewards), 17)
+        extra_rewards = {
+          "wheel_support_deficit", "stationary_wheel_velocity", "wheel_air_time_excess"
+        }
+        self.assertEqual(set(body.rewards) - set(reference.rewards), extra_rewards)
         self.assertEqual(
-          {name: term.weight for name, term in body.rewards.items()},
+          {name: body.rewards[name].weight for name in reference.rewards},
           {name: term.weight for name, term in reference.rewards.items()},
         )
-        for name, term in body.rewards.items():
+        for name in reference.rewards:
+          term = body.rewards[name]
           if name not in ("pose", "lateral_gait"):
             self.assertIs(term.func, reference.rewards[name].func)
           # Joint/body selectors differ between models. Other reward parameters,
@@ -104,7 +109,11 @@ class Bodydemo03BaselineTest(unittest.TestCase):
           self.assertEqual(
             getattr(command, key), getattr(reference.commands["twist"], key)
           )
-        self.assertEqual(set(body.metrics), set(reference.metrics))
+        self.assertEqual(
+          set(body.metrics) - set(reference.metrics),
+          {"wheel_support_fraction", "max_wheel_air_time"},
+        )
+        self.assertIn("wheel_air_time_limit", body.terminations)
         self.assertNotIn("height_scan", body.observations["actor"].terms)
         self.assertEqual(set(body.curriculum), set(reference.curriculum))
         if not play:
@@ -238,6 +247,57 @@ class Bodydemo03BaselineTest(unittest.TestCase):
     self.assertGreater(values[3], 0.99)
     self.assertTrue((values[[1, 2, 4, 5, 6]] < 0.01).all())
     self.assertTrue((values[7:] > 0.99).all())
+
+  def test_flat_requires_loaded_wheels_at_rest_and_in_both_rolling_directions(self):
+    env = reward_env([
+      [0, 0, 0], [0.5, 0, 0], [-0.3, 0, 0],
+      [0, 0.3, 0], [0, -0.3, 0], [0, 0, 0.5], [0, 0, -0.5],
+      [0, 0.15, 0], [0, 0, 0.15], [0, 0.05, 0], [0, 0, 0],
+    ])
+    contact = env.scene["feet_ground_contact"].data
+    contact.force[:, 1] = 0
+    contact.found[:, 1] = 0
+    # A grazing wheel must not count as weight-bearing just because it touches.
+    contact.found[-1, 1] = 1
+    contact.force[-1, 1, 2] = 0.1
+    params = bodydemo03_flat_env_cfg().rewards["wheel_support_deficit"].params
+    values = body_mdp.wheel_support_deficit(env, **params)
+    torch.testing.assert_close(
+      values, torch.tensor([1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0.98])
+    )
+    torch.testing.assert_close(
+      body_mdp.wheel_support_fraction(env, "feet_ground_contact"),
+      torch.full((11,), 0.75),
+    )
+    contact.force[:, 1, 2] = 60
+    contact.found[:, 1] = 1
+    self.assertTrue((body_mdp.wheel_support_deficit(env, **params) == 0).all())
+
+  def test_flat_penalizes_constant_wheel_spin_only_under_standing_commands(self):
+    env = reward_env([[0, 0, 0]] * 3 + [[0.3, 0, 0], [0, 0.3, 0], [0, 0, -0.3]])
+    data = env.scene["robot"].data
+    data.joint_vel[1, 7] = 15
+    data.joint_vel[2, 7] = -15
+    data.joint_vel[3:, 7] = 15
+    # Leg motion is excluded from this wheel-specific cost.
+    data.joint_vel[:, 0] = 100
+    term = bodydemo03_flat_env_cfg().rewards["stationary_wheel_velocity"]
+    params = dict(term.params, asset_cfg=SceneEntityCfg("robot", joint_ids=[3, 7, 11, 15]))
+    values = term.func(env, **params)
+    torch.testing.assert_close(values, torch.tensor([0, 56.25, 56.25, 0, 0, 0]))
+    self.assertLess(term.weight * values[1], -1)
+
+  def test_flat_allows_normal_swing_but_rejects_a_permanently_lifted_leg(self):
+    env = reward_env([[0, 0, 0], [0.3, 0, 0], [0, 0.3, 0], [0, 0, -0.3], [0, -0.3, 0]])
+    air = env.scene["feet_ground_contact"].data.current_air_time
+    air[:, 1] = torch.tensor([0.0, 0.24, 0.35, 0.55, 0.81])
+    cfg = bodydemo03_flat_env_cfg()
+    cost = cfg.rewards["wheel_air_time_excess"]
+    torch.testing.assert_close(cost.func(env, **cost.params), torch.tensor([0, 0, 0, 1, 4.0]))
+    limit = cfg.terminations["wheel_air_time_limit"]
+    torch.testing.assert_close(limit.func(env, **limit.params), torch.tensor([False] * 4 + [True]))
+    air.zero_()  # Landing/reset clears the timeout; no term keeps stale per-env state.
+    self.assertFalse(limit.func(env, **limit.params).any())
 
   def test_rough_reward_baseline_is_preserved(self):
     # This task was excluded from the Flat migration.

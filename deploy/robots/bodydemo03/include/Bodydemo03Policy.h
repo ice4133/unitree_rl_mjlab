@@ -34,6 +34,19 @@ struct PolicyLayout
     std::vector<ActionTarget> targets;
 };
 
+// Blend physical motor targets, keeping the actor's raw last-action observation.
+class CommandTransition
+{
+public:
+    explicit CommandTransition(double duration);
+    void reset(const unitree_go::msg::dds_::LowCmd_ &command);
+    void apply(unitree_go::msg::dds_::LowCmd_ &command, double elapsed) const;
+
+private:
+    double duration_;
+    unitree_go::msg::dds_::LowCmd_ initial_{};
+};
+
 // Reuse the common ONNX runner and keep the Bodydemo03 command mapping alongside it.
 class Bodydemo03Policy : public isaaclab::OrtRunner
 {

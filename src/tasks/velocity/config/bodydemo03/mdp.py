@@ -20,6 +20,71 @@ HIP_INWARD_SIGNS = {"fl": 1.0, "fr": -1.0, "rl": -1.0, "rr": 1.0}
 WHEEL_FORWARD_SIGNS = {"fl": 1.0, "fr": -1.0, "rl": 1.0, "rr": -1.0}
 
 
+def wheel_support_fraction(
+  env: ManagerBasedRlEnv, sensor_name: str, min_force: float = 5.0
+) -> torch.Tensor:
+  """Fraction of wheels actually bearing weight, rather than just touching."""
+  data = env.scene[sensor_name].data
+  supported = (data.found > 0) & (data.force[..., 2].abs() >= min_force)
+  return supported.float().mean(dim=1)
+
+
+def wheel_support_deficit(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  sensor_name: str,
+  min_force: float = 5.0,
+  maneuver_threshold: float = 0.1,
+) -> torch.Tensor:
+  """Require four loaded wheels at rest/rolling, allowing maneuver swings."""
+  data = env.scene[sensor_name].data
+  load = data.force[..., 2].abs() * (data.found > 0)
+  missing_load = (1.0 - load / min_force).clamp(0.0, 1.0).sum(dim=1)
+  command = env.command_manager.get_command(command_name)
+  # Even the minimum trained lateral speed (0.15 m/s) must allow full swings.
+  # Blending this strong penalty with gait weight would punish those steps.
+  rolling = (command[:, 1].abs() <= maneuver_threshold) & (
+    command[:, 2].abs() <= maneuver_threshold
+  )
+  return missing_load * rolling
+
+
+def stationary_wheel_velocity_l2(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg,
+  command_threshold: float = 0.1,
+) -> torch.Tensor:
+  """Penalize steady wheel spin under a zero command, including airborne wheels."""
+  command = env.command_manager.get_command(command_name)
+  standing = torch.linalg.vector_norm(command, dim=1) < command_threshold
+  velocity = env.scene[asset_cfg.name].data.joint_vel[:, asset_cfg.joint_ids]
+  return velocity.square().mean(dim=1) * standing
+
+
+def wheel_air_time_excess(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  max_air_time: float = 0.35,
+  time_scale: float = 0.2,
+) -> torch.Tensor:
+  """Allow normal swings, but penalize a wheel that does not return to support."""
+  air_time = env.scene[sensor_name].data.current_air_time
+  excess = ((air_time - max_air_time) / time_scale).clamp(0.0, 2.0)
+  return excess.square().sum(dim=1)
+
+
+def max_wheel_air_time(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tensor:
+  return env.scene[sensor_name].data.current_air_time.amax(dim=1)
+
+
+def wheel_air_time_limit(
+  env: ManagerBasedRlEnv, sensor_name: str, max_air_time: float = 0.8
+) -> torch.Tensor:
+  """End sustained unsupported-leg episodes without forbidding ordinary steps."""
+  return max_wheel_air_time(env, sensor_name) > max_air_time
+
+
 class upright_posture(variable_posture):
   """Keep the neutral posture and reduce its reward further for inward hips."""
 

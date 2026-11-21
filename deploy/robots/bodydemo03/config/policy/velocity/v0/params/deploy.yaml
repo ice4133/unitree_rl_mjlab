@@ -14,9 +14,11 @@ default_joint_pos: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 commands:
   base_velocity:
+    # Body-frame limits for Bodydemo03-Flat after the lateral curriculum.
+    # +x forward, +y left [m/s]; +z counterclockwise yaw [rad/s].
     ranges:
       lin_vel_x: [-0.5, 1.0]
-      lin_vel_y: [0.0, 0.0]
+      lin_vel_y: [-0.5, 0.5]
       ang_vel_z: [-1.0, 1.0]
       heading: null
 

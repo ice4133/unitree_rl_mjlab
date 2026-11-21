@@ -30,7 +30,25 @@ Go2W 和 Bodydemo03 控制器共用 domain 0 的 `rt/lowcmd`，启动前请先�
 终端按 `Ctrl+C`，确保只运行一个控制器。Bodydemo03 启动时若检测到已有命令发布，
 会报错并退出；它不会自动结束本机的 `go2w_ctrl` 或其他控制器进程。
 默认 `control.mode: keyboard`，键盘 `1` 进入 `FixStand`，等待 2 秒完成站立，
-再按 `2` 进入 `Velocity`；`0` 返回阻尼。W/S 前后，Q/E 转向，横向速度固定为零。
+再按 `2` 进入 `Velocity`；`0` 返回阻尼。在控制器终端按住 W/S 前后、A/D 左右横移、
+Q/E 左右转向；键盘平移速度目标为 ±0.3 m/s，转向为 ±0.3 rad/s，松开后目标归零。
+
+`config/policy/velocity/v0/params/deploy.yaml` 中的速度范围与 Flat 训练的最终课程一致：
+
+| 指令 | 范围 | 正方向 |
+| --- | --- | --- |
+| `lin_vel_x` | -0.5～1.0 m/s | 前进（W） |
+| `lin_vel_y` | -0.5～0.5 m/s | 向左横移（A） |
+| `ang_vel_z` | -1.0～1.0 rad/s | 左转（Q） |
+
+这些范围用于限制输入；进入 `Velocity` 后通过键盘、手柄或 ROS 发送速度指令。
+
+`FSM.Velocity.transition_time: 0.5` 将上一状态的关节位置／轮速目标平滑过渡到
+策略目标，时间单位为秒；设为 0 可关闭过渡。每次重新进入 `Velocity` 都重新计时。
+Bodydemo03 使用独立的 `Bodydemo03Velocity` 状态，在拿到完整首帧推理结果前保留
+上一状态目标，并同步策略线程与 FSM 之间的动作读取。
+启动平滑后仍需验证新策略在零命令下四轮承重、轮速接近零；旧权重中的持续抬腿
+需要通过新的支撑奖励重新训练解决。
 
 `config/config.yaml` 也支持 Go2W 相同的 `joystick` 和 `auto` 模式。
 手柄需同时在 `simulate/config.yaml` 中开启 `use_joystick` 并选择正确型号。
@@ -40,8 +58,11 @@ Unitree 电机通信使用 domain 0，ROS 指令超时 0.5 秒归零。
 
 ```bash
 ROS_DOMAIN_ID=10 ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist \
-  '{linear: {x: 0.2}, angular: {z: 0.0}}'
+  '{linear: {x: 0.2, y: 0.2}, angular: {z: 0.3}}'
 ```
+
+上例同时给出前进、横移和转向指令；单独测试某个方向时，将另外两项设为零，
+相反方向使用负值。使用 ROS 速度指令前，将 `control.mode` 改为 `auto`。
 
 更改控制模式后重启控制器。不需要 ROS 输入时，可以用
 `-DENABLE_ROS2_COMMANDS=OFF` 编译，继续使用键盘或手柄。
@@ -58,8 +79,8 @@ cp logs/rsl_rl/bodydemo03_velocity/<时间>/policy.onnx \
 ```
 
 重启控制器加载新权重。ONNX 本身已包含 Actor 的运行均值归一化。
-首次接入已复制 `2026-11-20_14-55-29` 目录当时的导出，属于训练初期权重；
-训练完成后按上面的命令更新。权重按本机训练产物管理，不提交 Git。
+部署目录使用上一次手动复制的导出，训练后需按上面的命令更新。
+权重按本机训练产物管理，不提交 Git。
 新 checkout 中需要先复制对应策略，再启动完整 FSM。
 
 本配置接收 `obs: [1, 55]`，输出 `actions: [1, 16]`。
