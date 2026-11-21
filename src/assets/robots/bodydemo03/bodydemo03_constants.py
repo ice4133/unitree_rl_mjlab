@@ -14,12 +14,13 @@ from mjlab.actuator import BuiltinPositionActuatorCfg, IdealPdActuatorCfg
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.spec_config import CollisionCfg
 
-
 BODYDEMO03_DIR = Path(__file__).resolve().parent
 BODYDEMO03_XML = BODYDEMO03_DIR / "xmls" / "bodydemo03.xml"
 
 BODYDEMO03_LEG_JOINTS = (r"^(fl|fr|rl|rr)_(hip|thigh|calf)_joint$",)
 BODYDEMO03_WHEEL_JOINTS = (r"^(fl|fr|rl|rr)_foot_joint$",)
+# Radial extent in the wheel's local XZ plane, measured from the imported mesh.
+BODYDEMO03_WHEEL_RADIUS = 0.088
 
 WHEEL_SITES = ("fl", "fr", "rl", "rr")
 WHEEL_GEOMS = tuple(f"{leg}_foot_collision" for leg in WHEEL_SITES)

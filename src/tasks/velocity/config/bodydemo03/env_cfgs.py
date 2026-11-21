@@ -5,10 +5,15 @@ Reward weights and action scales are initial simulation values for later tuning.
 
 from copy import deepcopy
 
-from mjlab.envs import ManagerBasedRlEnvCfg
-from mjlab.envs import mdp
+from mjlab.envs import ManagerBasedRlEnvCfg, mdp
 from mjlab.envs.mdp.actions import JointPositionActionCfg, JointVelocityActionCfg
-from mjlab.managers import EventTermCfg, RewardTermCfg, SceneEntityCfg, TerminationTermCfg
+from mjlab.managers import (
+  CurriculumTermCfg,
+  EventTermCfg,
+  RewardTermCfg,
+  SceneEntityCfg,
+  TerminationTermCfg,
+)
 from mjlab.managers.metrics_manager import MetricsTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg, RayCastSensorCfg
 from mjlab.tasks.velocity import mdp as velocity_mdp
@@ -17,11 +22,17 @@ from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from src.assets.robots.bodydemo03.bodydemo03_constants import (
   BODYDEMO03_LEG_JOINTS,
   BODYDEMO03_WHEEL_JOINTS,
+  BODYDEMO03_WHEEL_RADIUS,
   WHEEL_GEOMS,
   WHEEL_SITES,
   get_bodydemo03_velocity_robot_cfg,
 )
+from src.tasks.velocity import mdp as task_mdp
+from src.tasks.velocity.mdp import wheeled as wheeled_mdp
+from src.tasks.velocity.mdp.wheeled_velocity_command import WheeledVelocityCommandCfg
 from src.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
+
+from . import mdp as bodydemo03_mdp
 
 LEG_JOINTS = BODYDEMO03_LEG_JOINTS
 WHEEL_JOINTS = BODYDEMO03_WHEEL_JOINTS
@@ -237,7 +248,7 @@ def bodydemo03_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
 
 def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create the flat rolling template with its 55-value actor input."""
+  """Train rolling, sidestepping and step-assisted turns with 55 actor values."""
   cfg = _make_bodydemo03_env_cfg(play=play)
   cfg.sim.njmax = 300
   cfg.sim.mujoco.ccd_iterations = 50
@@ -252,6 +263,109 @@ def bodydemo03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
   for group in cfg.observations.values():
     group.terms.pop("height_scan", None)
-  cfg.curriculum = {}
+  cfg.curriculum.pop("terrain_levels", None)
+
+  # Match the latest Go2W Flat locomotion targets while retaining Bodydemo03's
+  # CAD-zero stance, joint axes, PD gains and wheel effort limits.
+  cfg.commands["twist"] = WheeledVelocityCommandCfg(
+    entity_name="robot",
+    resampling_time_range=(3.0, 8.0),
+    rel_standing_envs=0.1,
+    heading_command=False,
+    debug_vis=True,
+    ranges=UniformVelocityCommandCfg.Ranges(
+      lin_vel_x=(-0.5, 1.0),
+      lin_vel_y=(-0.5, 0.5) if play else (-0.25, 0.25),
+      ang_vel_z=(-1.0, 1.0),
+    ),
+  )
+  if not play:
+    cfg.curriculum["command_vel"] = CurriculumTermCfg(
+      func=task_mdp.commands_vel,
+      params={
+        "command_name": "twist",
+        "velocity_stages": [
+          {"step": 0, "lin_vel_y": (-0.25, 0.25)},
+          {"step": 1000 * 24, "lin_vel_y": (-0.35, 0.35)},
+          {"step": 3000 * 24, "lin_vel_y": (-0.5, 0.5)},
+        ],
+      },
+    )
+
+  cfg.rewards["track_linear_velocity"].params["z_vel_weight"] = 0.0
+  cfg.rewards["track_angular_velocity"].weight = 2.0
+  cfg.rewards["body_orientation_l2"].weight = -2.0
+  cfg.rewards["pose"].weight = 1.5
+  cfg.rewards["pose"].func = bodydemo03_mdp.upright_posture
+  cfg.rewards["pose"].params.update(inward_tolerance=0.03, inward_std=0.05)
+  # Only lateral/yaw commands relax the posture; pure X travel favors rolling.
+  cfg.rewards["pose"].params["linear_command_axes"] = (1,)
+  cfg.rewards["pose"].params["std_standing"] = {
+    r".*(fl|fr|rl|rr)_hip_joint.*": 0.04,
+    r".*(fl|fr|rl|rr)_thigh_joint.*": 0.12,
+    r".*(fl|fr|rl|rr)_calf_joint.*": 0.18,
+  }
+  for name in ("std_walking", "std_running"):
+    cfg.rewards["pose"].params[name] = {
+      r".*(fl|fr|rl|rr)_hip_joint.*": 0.1,
+      r".*(fl|fr|rl|rr)_thigh_joint.*": 0.5,
+      r".*(fl|fr|rl|rr)_calf_joint.*": 0.75,
+    }
+  cfg.rewards["lateral_gait"] = RewardTermCfg(
+    func=bodydemo03_mdp.locomotion_gait,
+    weight=1.0,
+    params={
+      "command_name": "twist",
+      "sensor_name": "feet_ground_contact",
+      "period": 0.6,
+      "offset": [0.0, 0.5, 0.5, 0.0],
+      "threshold": 0.6,
+      "include_turning": True,
+      "wheel_radius": BODYDEMO03_WHEEL_RADIUS,
+      "rolling_velocity_std": 0.15,
+      "asset_cfg": SceneEntityCfg("robot", joint_names=WHEEL_JOINTS),
+    },
+  )
+  cfg.rewards["lateral_air_time"] = RewardTermCfg(
+    func=wheeled_mdp.lateral_air_time,
+    weight=1.5,
+    params={
+      "command_name": "twist",
+      "sensor_name": "feet_ground_contact",
+      "threshold": 0.2,
+      "include_turning": True,
+    },
+  )
+  cfg.rewards["track_lateral_velocity"] = RewardTermCfg(
+    func=wheeled_mdp.track_lateral_velocity,
+    weight=2.0,
+    params={"command_name": "twist", "std": 0.25},
+  )
+  cfg.rewards["wheel_lateral_slip"] = RewardTermCfg(
+    func=wheeled_mdp.wheel_lateral_slip,
+    weight=-1.0,
+    params={
+      "sensor_name": "feet_ground_contact",
+      "asset_cfg": SceneEntityCfg(
+        "robot",
+        site_names=WHEEL_SITES,
+        body_names=tuple(f"{name}_foot_link" for name in WHEEL_SITES),
+      ),
+    },
+  )
+  cfg.rewards["soft_landing"] = RewardTermCfg(
+    func=task_mdp.soft_landing,
+    weight=-1e-3,
+    params={"sensor_name": "feet_ground_contact", "command_name": "twist"},
+  )
+  cfg.metrics["lateral_velocity_error"] = MetricsTermCfg(
+    func=wheeled_mdp.lateral_velocity_error,
+    params={"command_name": "twist"},
+  )
+  for name, joints in (("leg", LEG_JOINTS), ("wheel", WHEEL_JOINTS)):
+    cfg.metrics[f"{name}_joint_vel_l2"] = MetricsTermCfg(
+      func=mdp.joint_vel_l2,
+      params={"asset_cfg": SceneEntityCfg("robot", joint_names=joints)},
+    )
 
   return cfg
