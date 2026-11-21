@@ -16,12 +16,13 @@ Linux 构建会将 Unitree SDK2 的动态库路径写入可执行文件的 RPATH
 即使当前终端已加载 ROS 环境，也无需手动设置 `LD_LIBRARY_PATH`。
 
 控制器需收到 `rt/lowstate` 后才会继续启动。仿真器使用根目录的
-`simulate/config.yaml`。当前默认场景为 Bodydemo03，运行 Go2W 时使用
+`simulate/config.yaml`。运行 Go2W 时使用
 `./simulate/build/unitree_mujoco --robot go2w --scene src/assets/robots/unitree_go2w/xmls/scene_go2w.xml`，
 建图／导航同时将 `ros2_sensors_config` 设为 `ros2_sensors/config/sensors.yaml`。
 
-键盘 `1` 进入站立，`2` 进入策略，`0` 进入阻尼；W/S 控制前后，Q/E 控制转向。
-当前平地滚动任务的横向速度固定为 0，A/D 不产生横移命令。
+键盘 `1` 进入站立，`2` 进入策略，`0` 进入阻尼；按住 W/S 控制前后，
+A/D 控制左右横移，Q/E 控制转向。横向限幅为 ±0.5 m/s，
+键盘提供约 ±0.3 m/s 的横移指令；实际迈步能力由策略决定。
 在 `config/config.yaml` 中设置 `control.mode: keyboard` 或 `control.mode: joystick`，
 状态切换按入口提示操作。`control.mode` 是唯一的档位选择：手动档同时选择
 速度和状态输入；自动档通过 ROS 接收速度，同时保留手柄状态按钮和终端状态按键。
@@ -52,7 +53,7 @@ ROS_DOMAIN_ID=10 ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist \
 
 尚未收到指令、收到非有限值或超过 `control.ros.timeout`（默认 0.5 秒）未收到新指令时，
 目标速度归零，保持策略运行。超时按单调时钟计算，不依赖 `/clock`。
-所有来源统一沿用策略 `params/deploy.yaml` 的速度范围限幅；当前策略横移范围为 0。
+所有来源统一沿用策略 `params/deploy.yaml` 的速度范围限幅，横移范围为 ±0.5 m/s。
 `autonomy` 已接入 Nav2；运行 `./autonomy/run.sh navigation`，再用
 `./autonomy/run.sh goal --x 4 --y 0` 或 RViz 设置目标即可自动绕障。
 导航的 `/cmd_vel` 由最终速度守护独占发布，避免同时手动发布到该话题。
@@ -96,8 +97,12 @@ config/policy/velocity/v0/exported/policy.onnx
 公共 `State_RLBase` 在控制器初始化时加载策略，完整配置需要先放入权重。
 单独测试阻尼和站立时，可暂时从 `config/config.yaml` 的 `FSM._` 中移除
 `Velocity` 项，并移除 `FixStand.transitions` 中进入 `Velocity` 的配置。
-部署参数与 `src/assets/robots/unitree_go2w/go2w_constants.py` 的姿态和增益，
-以及 `src/tasks/velocity/config/go2w/env_cfgs.py` 的动作和观测一致。
+部署参数必须与所加载 ONNX 的姿态、增益、动作和观测一致。
+当前已安装 ONNX 仍使用左髋 -0.1、右髋 +0.1，部署偏置保留对应旧值；
+新训练的髋基准已改为零。FixStand 的最终姿态也使用零髋角，
+但旧策略接管后可能重新内收，需重新训练修正。
+新 Flat 训练会在 `policy.onnx` 旁导出配套 `deploy.yaml`；验收后将两者分别复制到
+`exported/policy.onnx` 和 `params/deploy.yaml` 并重启控制器，避免混用零位。
 当前对应任务为 `Unitree-Go2W-Flat`；修改训练配置后，需同步核对以下参数：
 
 - `step_dt`、两个动作项的顺序、关节选择、scale 和 offset。

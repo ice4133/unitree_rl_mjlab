@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import torch
-
 from mjlab.entity import Entity
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
@@ -339,6 +338,9 @@ class variable_posture:
 
   Tune std values per joint based on how much motion that joint needs at each
   speed. Map joint name patterns to std values, e.g. {".*knee.*": 0.35}.
+  ``linear_command_axes`` selects which planar commands relax the posture.
+  A wheeled flat task can use ``(1,)`` to keep a tight pose when rolling along X
+  and allow leg motion for lateral and yaw commands. Other tasks retain XY.
   """
 
   def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRlEnv):
@@ -379,6 +381,7 @@ class variable_posture:
     command_name: str,
     walking_threshold: float = 0.5,
     running_threshold: float = 1.5,
+    linear_command_axes: tuple[int, ...] = (0, 1),
   ) -> torch.Tensor:
     del std_standing, std_walking, std_running  # Unused.
 
@@ -386,7 +389,7 @@ class variable_posture:
     command = env.command_manager.get_command(command_name)
     assert command is not None
 
-    linear_speed = torch.norm(command[:, :2], dim=1)
+    linear_speed = torch.norm(command[:, linear_command_axes], dim=1)
     angular_speed = torch.abs(command[:, 2])
     total_speed = linear_speed + angular_speed
 

@@ -20,6 +20,13 @@ def lateral_step_weight(env: ManagerBasedRlEnv, command_name: str) -> torch.Tens
   return ((command[:, 1].abs() - 0.1) / 0.1).clamp(0.0, 1.0)
 
 
+def maneuver_step_weight(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  """Guide sidesteps and step-assisted turns, with no guidance for pure X rolling."""
+  command = env.command_manager.get_command(command_name)
+  turning = ((command[:, 2].abs() - 0.1) / 0.2).clamp(0.0, 1.0)
+  return torch.maximum(lateral_step_weight(env, command_name), turning)
+
+
 def lateral_gait(
   env: ManagerBasedRlEnv,
   command_name: str,
@@ -27,9 +34,11 @@ def lateral_gait(
   period: float,
   offset: list[float],
   threshold: float,
+  include_turning: bool = False,
 ) -> torch.Tensor:
-  """Guide diagonal stepping for sidesteps without forcing a gait when rolling."""
-  return lateral_step_weight(env, command_name) * feet_gait(
+  """Guide sidesteps and optionally turns without forcing a gait when rolling."""
+  weight = maneuver_step_weight if include_turning else lateral_step_weight
+  return weight(env, command_name) * feet_gait(
     env,
     period=period,
     offset=offset,
@@ -45,9 +54,11 @@ def lateral_air_time(
   command_name: str,
   sensor_name: str,
   threshold: float,
+  include_turning: bool = False,
 ) -> torch.Tensor:
-  """Encourage alternating support using contact times, independent of terrain z."""
-  return lateral_step_weight(env, command_name) * feet_air_time(
+  """Encourage alternating support for sidesteps and optionally turns."""
+  weight = maneuver_step_weight if include_turning else lateral_step_weight
+  return weight(env, command_name) * feet_air_time(
     env,
     sensor_name=sensor_name,
     command_name=command_name,

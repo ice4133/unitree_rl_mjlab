@@ -84,21 +84,6 @@ def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.events["foot_friction"].params["asset_cfg"].geom_names = geom_names
   cfg.events["base_com"].params["asset_cfg"].body_names = ("base_link",)
 
-  cfg.rewards["pose"].params["std_standing"] = {
-    r".*(FR|FL|RR|RL)_hip_joint.*": 0.05,
-    r".*(FR|FL|RR|RL)_thigh_joint.*": 0.1,
-    r".*(FR|FL|RR|RL)_calf_joint.*": 0.15,
-  }
-  cfg.rewards["pose"].params["std_walking"] = {
-    r".*(FR|FL|RR|RL)_hip_joint.*": 0.15,
-    r".*(FR|FL|RR|RL)_thigh_joint.*": 0.35,
-    r".*(FR|FL|RR|RL)_calf_joint.*": 0.5,
-  }
-  cfg.rewards["pose"].params["std_running"] = {
-    r".*(FR|FL|RR|RL)_hip_joint.*": 0.15,
-    r".*(FR|FL|RR|RL)_thigh_joint.*": 0.35,
-    r".*(FR|FL|RR|RL)_calf_joint.*": 0.5,
-  }
   for name in ("body_orientation_l2", "body_ang_vel"):
     cfg.rewards[name].params["asset_cfg"].body_names = ("base_link",)
   cfg.terminations["illegal_contact"] = TerminationTermCfg(
@@ -164,7 +149,8 @@ def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # Wheel rotation naturally contributes angular momentum.
   cfg.rewards.pop("angular_momentum", None)
   cfg.rewards["track_linear_velocity"].weight = 3.0
-  cfg.rewards["track_angular_velocity"].weight = 1.5
+  cfg.rewards["track_angular_velocity"].weight = 2.0
+  cfg.rewards["body_orientation_l2"].weight = -2.0
   cfg.rewards["action_rate_l2"].weight = -0.01
 
   # Continuous wheels have no position target or position limit to penalize.
@@ -187,44 +173,52 @@ def _make_go2w_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={"asset_cfg": SceneEntityCfg("robot", actuator_names=LEG_JOINTS)},
   )
 
-  # Lateral motion requires stepping and hip excursions. Do not reward holding
-  # the narrow rolling pose or suppress the vertical movement needed to step.
+  # Keep hips near their neutral zero while allowing thigh/calf motion for
+  # sidesteps, turns and rough-terrain travel. Flat overrides the command axes
+  # below so pure forward/backward rolling retains the tight standing pose.
   cfg.rewards["track_linear_velocity"].params["z_vel_weight"] = 0.0
-  cfg.rewards["pose"].weight = 0.5
+  cfg.rewards["pose"].weight = 1.5
+  cfg.rewards["pose"].params["std_standing"] = {
+    r".*(FR|FL|RR|RL)_hip_joint.*": 0.04,
+    r".*(FR|FL|RR|RL)_thigh_joint.*": 0.12,
+    r".*(FR|FL|RR|RL)_calf_joint.*": 0.18,
+  }
   for name in ("std_walking", "std_running"):
     cfg.rewards["pose"].params[name] = {
-      r".*(FR|FL|RR|RL)_hip_joint.*": 0.3,
+      r".*(FR|FL|RR|RL)_hip_joint.*": 0.1,
       r".*(FR|FL|RR|RL)_thigh_joint.*": 0.5,
       r".*(FR|FL|RR|RL)_calf_joint.*": 0.75,
     }
   cfg.rewards["lateral_gait"] = RewardTermCfg(
     func=go2w_mdp.lateral_gait,
-    weight=0.5,
+    weight=1.0,
     params={
       "command_name": "twist",
       "sensor_name": feet_ground_cfg.name,
       "period": 0.6,
       "offset": [0.0, 0.5, 0.5, 0.0],
       "threshold": 0.6,
+      "include_turning": True,
     },
   )
   cfg.rewards["lateral_air_time"] = RewardTermCfg(
     func=go2w_mdp.lateral_air_time,
-    weight=1.0,
+    weight=1.5,
     params={
       "command_name": "twist",
       "sensor_name": feet_ground_cfg.name,
       "threshold": 0.2,
+      "include_turning": True,
     },
   )
   cfg.rewards["track_lateral_velocity"] = RewardTermCfg(
     func=go2w_mdp.track_lateral_velocity,
-    weight=1.5,
+    weight=2.0,
     params={"command_name": "twist", "std": 0.25},
   )
   cfg.rewards["wheel_lateral_slip"] = RewardTermCfg(
     func=go2w_mdp.wheel_lateral_slip,
-    weight=-0.5,
+    weight=-1.0,
     params={
       "sensor_name": feet_ground_cfg.name,
       "asset_cfg": SceneEntityCfg(
@@ -297,6 +291,9 @@ def unitree_go2w_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.scene.terrain.max_init_terrain_level = 1
 
   cfg.rewards["stand_still"].weight = -0.5
+  # Retain compliance for forward obstacle negotiation; Flat alone treats
+  # pure X commands as rolling when choosing the posture tolerance.
+  cfg.rewards["pose"].weight = 0.75
 
   if play:
     generator.num_cols = 5
@@ -323,5 +320,6 @@ def unitree_go2w_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   for group in cfg.observations.values():
     group.terms.pop("height_scan", None)
   cfg.curriculum.pop("terrain_levels", None)
+  cfg.rewards["pose"].params["linear_command_axes"] = (1,)
 
   return cfg

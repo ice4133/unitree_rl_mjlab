@@ -8,12 +8,12 @@ from copy import deepcopy
 from pathlib import Path
 
 import mujoco
-
-from src import SRC_PATH
 from mjlab.actuator import BuiltinPositionActuatorCfg, IdealPdActuatorCfg
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.os import update_assets
 from mjlab.utils.spec_config import CollisionCfg
+
+from src import SRC_PATH
 
 ##
 # MJCF and assets.
@@ -86,8 +86,9 @@ INIT_STATE = EntityCfg.InitialStateCfg(
   joint_pos={
     ".*_thigh_joint": 0.9,
     ".*_calf_joint": -1.8,
-    ".*R_hip_joint": 0.1,
-    ".*L_hip_joint": -0.1,
+    # Both hip axes point along +X. Zero keeps the legs upright; the old
+    # left=-0.1/right=+0.1 reference pulled all four wheels inward.
+    ".*_hip_joint": 0.0,
     ".*_wheel_joint": 0.0,
   },
   joint_vel={".*": 0.0},
@@ -148,9 +149,8 @@ def get_go2w_robot_cfg() -> EntityCfg:
 
 
 if __name__ == "__main__":
-  import mujoco.viewer as viewer
-
   from mjlab.entity import Entity
+  from mujoco import viewer
 
   robot = Entity(get_go2w_robot_cfg())
   viewer.launch(robot.spec.compile())

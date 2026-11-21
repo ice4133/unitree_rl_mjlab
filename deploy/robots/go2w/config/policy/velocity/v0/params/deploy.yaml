@@ -1,5 +1,6 @@
-# Deployment contract for Unitree-Go2W-Flat. Keep this file synchronized with
-# src/tasks/velocity/config/go2w/env_cfgs.py when changing the training setup.
+# Deployment contract for the currently installed 55-input Go2W ONNX.
+# Its metadata uses the old inward hip offsets below. Keep those paired with
+# this model; new training exports neutral hips and a matching deploy.yaml.
 # XML order: FL(hip,thigh,calf,wheel), FR(...), RL(...), RR(...).
 # SDK order: FR legs 0..2, FL 3..5, RR 6..8, RL 9..11;
 #           FR/FL/RR/RL wheels 12/13/14/15.
@@ -16,7 +17,7 @@ commands:
   base_velocity:
     ranges:
       lin_vel_x: [-0.5, 1.0]
-      lin_vel_y: [0.0, 0.0]
+      lin_vel_y: [-0.5, 0.5]
       ang_vel_z: [-1.0, 1.0]
       heading: null
 

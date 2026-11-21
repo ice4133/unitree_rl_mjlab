@@ -2,7 +2,7 @@ control:
   # Restart go2w_ctrl after changing the mode.
   # joystick/keyboard: manual velocity and state input.
   # auto: ROS velocity; gamepad state buttons and terminal state keys remain available.
-  mode: auto # joystick | keyboard | auto
+  mode: keyboard # joystick | keyboard | auto
   ros:
     topic: /cmd_vel # geometry_msgs/msg/Twist: body-frame vx/vy [m/s], wz [rad/s].
     domain_id: 10 # Independent of Unitree SDK2 domain 0 and shell ROS_DOMAIN_ID.
@@ -35,7 +35,7 @@ FSM:
     qs:
       - [] # Filled from current command positions by the common FixStand state.
       - [0, 1.36, -2.65, 0, 1.36, -2.65, 0, 1.36, -2.65, 0, 1.36, -2.65, 0, 0, 0, 0]
-      - [0.1, 0.9, -1.8, -0.1, 0.9, -1.8, 0.1, 0.9, -1.8, -0.1, 0.9, -1.8, 0, 0, 0, 0]
+      - [0, 0.9, -1.8, 0, 0.9, -1.8, 0, 0.9, -1.8, 0, 0.9, -1.8, 0, 0, 0, 0]
   Velocity:
     transitions:
       Passive: (LT + B.on_pressed) | (LT.on_pressed + B)
